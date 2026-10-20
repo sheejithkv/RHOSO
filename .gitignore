@@ -1,0 +1,28 @@
+# Local reports from the health-check script
+rhoso-health-*/
+healthcheck_mock_*/
+*.log
+
+# Local credentials / cloud access materials
+.env
+.env.*
+!.env.example
+clouds.yaml
+secure.yaml
+kubeconfig
+kubeconfig.*
+id_rsa
+id_ed25519
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Local caches/editors
+__pycache__/
+*.pyc
+.venv/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
