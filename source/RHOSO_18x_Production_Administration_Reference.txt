@@ -1,0 +1,2815 @@
+############################################################
+# RHOSO 18.x PRODUCTION ADMINISTRATION COMMAND REFERENCE
+# Created: 2026-10-20; designed for Red Hat RHOSO 18.0.x
+# Notes: Documentation-validated patterns + standard CLI syntax.
+# Static review and Bash syntax checks performed; NOT tested against a live RHOSO cloud.
+# DO NOT RUN THIS REFERENCE AS A SCRIPT. Copy/inspect commands individually.
+# Scope: RHOSO Operator & EDPM, not TripleO/Pacemaker overcloud.
+# Release-gated example: Red Hat control-plane OADP backup needs RHOSO 18.0.21+, OCP 4.20+, OADP 1.5+.
+# Release-gated example: Red Hat control-plane OADP backup needs RHOSO 18.0.21+, OCP 4.20+, OADP 1.5+.
+# Topology and release gates must be confirmed before any CHANGE/DELETE.
+# Legend: [RO] [CHANGE] [DELETE] [UNVERIFIED].
+############################################################
+
+# Discover namespace, set only AFTER selecting intended RHOSO CR:
+# [OCP][RO] oc get openstackcontrolplane -A
+# export NS="<rhoso-namespace>"
+# export OPERATORS_NS="<operator-namespace>"
+# export CONTROLPLANE_NAME="<controlplane-cr-name>"
+# export OS_CLIENT_POD="<discovered-openstackclient-pod>"
+# export OS_CLIENT_CONTAINER="<discovered-container-name>"
+# For container discovery: oc get pods -n "${NS}" -o wide
+# [OS] denotes commands entered in oc rsh/exec OpenStackClient context.
+# [CEPH] must NOT be presumed to be installed in OpenStackClient.
+# Preflight: `oc auth can-i get openstackcontrolplanes -A`
+
+
+############################################################
+# 01. OPENSHIFT CLUSTER ADMINISTRATION
+############################################################
+# Contexts: [OCP] workstation with oc cluster credentials; [OS] OpenStackClient container; [EDPM] RHEL data plane host; [CEPH] Ceph admin; [POD] selected service container. [RO]=read-only; [CHANGE]=state change; [DELETE]=destructive; [UNVERIFIED]=locally confirm before use. All angle-bracket fields and shell variables require operator-supplied values. Read-only means no intended infrastructure state change, not zero logging or token issuance.
+
+# [OCP][RO] Authenticate through configured cluster identity provider; use interactive auth and do not embed passwords
+oc login "${OCP_API_URL}"
+
+# [OCP][RO] Current OpenShift identity and selected server
+oc whoami && oc whoami --show-server
+
+# [OCP][RO] Identify selected project
+oc project -q
+
+# [OCP][RO] Inspect cluster version
+oc get clusterversion -o wide
+
+# [OCP][RO] Inspect operator readiness and degradation
+oc get clusteroperators
+
+# [OCP][RO] Inspect cluster node inventory
+oc get nodes -o wide
+
+# [OCP][RO] Inspect all node condition transitions
+oc get nodes -o json | jq -r '.items[] | [.metadata.name,((.status.conditions // [])|map(select(.type=="Ready"))|.[0].status),((.status.conditions // [])|map(select(.type=="Ready"))|.[0].lastTransitionTime)]|@tsv'
+
+# [OCP][RO] Review node allocatable resources
+oc describe node "${OCP_NODE}"
+
+# [OCP][RO] Inspect nodes resource pressure
+oc adm top nodes
+
+# [OCP][RO] Inspect node labels
+oc get nodes --show-labels
+
+# [OCP][RO] Inspect node taints
+oc get nodes -o custom-columns=NODE:.metadata.name,TAINTS:.spec.taints
+
+# [OCP][RO] List MachineConfigPools
+oc get machineconfigpools
+
+# [OCP][RO] Review MCP update/degraded conditions
+oc describe mcp "${MCP_NAME}"
+
+# [OCP][RO] List MachineConfigs
+oc get machineconfigs
+
+# [OCP][RO] List MachineSets, where Machine API is installed
+oc get machinesets -A
+
+# [OCP][RO] List MachineHealthChecks, where installed
+oc get machinehealthchecks -A
+
+# [OCP][RO] Get latest cluster events
+oc get events -A --sort-by=.lastTimestamp
+
+# [OCP][RO] Get pods with node placement
+oc get pods -A -o wide
+
+# [OCP][RO] Find non-running pod phases (includes Completed)
+oc get pods -A --field-selector=status.phase!=Running
+
+# [OCP][RO] List Pending pods
+oc get pods -A --field-selector=status.phase=Pending
+
+# [OCP][RO] Detect CrashLoopBackOff waiting reason
+oc get pods -A -o json | jq -r '.items[] | select(any(.status.containerStatuses[]?; .state.waiting.reason=="CrashLoopBackOff")) | [.metadata.namespace,.metadata.name]|@tsv'
+
+# [OCP][RO] Detect most recent OOMKilled termination
+oc get pods -A -o json | jq -r '.items[] | select(any(.status.containerStatuses[]?; .lastState.terminated.reason=="OOMKilled" or .state.terminated.reason=="OOMKilled")) | [.metadata.namespace,.metadata.name]|@tsv'
+
+# [OCP][RO] Read scoped pod events and container states
+oc describe pod -n "${NS}" "${POD}"
+
+# [OCP][RO] Review current pod resource usage
+oc adm top pods -A --containers
+
+# [OCP][RO] List Services and Routes
+oc get services,routes -A
+
+# [OCP][RO] List EndpointSlices and owning service labels
+oc get endpointslices -A --show-labels
+
+# [OCP][RO] List NetworkPolicies
+oc get networkpolicies -A
+
+# [OCP][RO] List PersistentVolumes
+oc get pv -o wide
+
+# [OCP][RO] List PersistentVolumeClaims
+oc get pvc -A
+
+# [OCP][RO] List StorageClasses
+oc get storageclasses
+
+# [OCP][RO] List namespace quotas and limits
+oc get resourcequotas,limitranges -A
+
+# [OCP][RO] List disruption budgets
+oc get pdb -A
+
+# [OCP][RO] List cluster networks
+oc get network.config.openshift.io cluster -o yaml
+
+# [OCP][RO] List Network Operators
+oc get network.operator.openshift.io cluster -o yaml
+
+# [OCP][RO] Find Multus DaemonSet and pods
+oc get daemonsets,pods -A -l app=multus
+
+# [OCP][RO] Discover NMState CRDs before querying
+oc api-resources --api-group=nmstate.io
+
+# [OCP][RO] List NodeNetworkState objects, if NMState installed
+oc get nodenetworkstates -A
+
+# [OCP][RO] List NodeNetworkConfigurationPolicies, if installed
+oc get nncp
+
+# [OCP][RO] List NMState enactments, if installed
+oc get nnce -A
+
+# [OCP][RO] List NetworkAttachmentDefinitions
+oc get network-attachment-definitions.k8s.cni.cncf.io -A
+
+# [OCP][RO] Inspect a Multus attachment definition
+oc get network-attachment-definition "${NAD}" -n "${NS}" -o yaml
+
+# [OCP][RO] Inspect OpenShift DNS config
+oc get dns.operator/default -o yaml
+
+# [OCP][RO] Inspect Cluster DNS configuration
+oc get dns.config/cluster -o yaml
+
+# [OCP][RO] Resolve service DNS inside an authorized running diagnostic container; specify its actual name
+oc exec -n "${NS}" "${DIAGNOSTIC_POD}" -c "${CONTAINER}" -- getent hosts "${SERVICE_FQDN}"
+
+# [OCP][RO] Test in-cluster HTTPS endpoint TLS and response using curl if installed
+oc exec -n "${NS}" "${DIAGNOSTIC_POD}" -c "${CONTAINER}" -- curl --fail --show-error --silent --max-time 10 --output /dev/null --write-out "%{http_code} %{time_total}\n" "${API_URL}"
+
+
+############################################################
+# 02. RHOSO OPERATORS AND CONTROL PLANE
+############################################################
+# Discover namespaces and installed CRDs first. Optional service CRDs (Octavia/Manila/Designate/Barbican/Ironic/Heat/Horizon/Telemetry) depend on enabled operators and release. CR spec changes belong in authoritative GitOps/Helm/source manifests, not generated pods.
+
+# [OCP][RO] Discover RHOSO control plane namespace(s)
+oc get openstackcontrolplane -A
+
+# [OCP][RO] Discover service API resources and CRDs
+oc api-resources --verbs=list | grep -Ei "openstack|nova|neutron|glance|cinder|keystone|ovn|galera|rabbit|maria"
+
+# [OCP][RO] Discover all RHOSO-related CRDs
+oc get crd | grep -Ei "openstack|nova|neutron|glance|cinder|keystone|ovn|galera|rabbit|maria"
+
+# [OCP][RO] Discover RHOSO Operators
+oc get operators
+
+# [OCP][RO] Discover OperatorSubscriptions
+oc get subscriptions.operators.coreos.com -A
+
+# [OCP][RO] Discover ClusterServiceVersions
+oc get csv -A
+
+# [OCP][RO] Discover InstallPlans
+oc get installplans -A
+
+# [OCP][RO] Discover operator deployments
+oc get deployments -n "${OPERATORS_NS}"
+
+# [OCP][RO] Review operator pod readiness
+oc get pods -n "${OPERATORS_NS}" -o wide
+
+# [OCP][RO] Review operator log errors from a selected deployment
+oc logs -n "${OPERATORS_NS}" deployment/"${OPERATOR_DEPLOYMENT}" --since=30m --all-containers=true
+
+# [OCP][RO] Inspect operator conditions
+oc describe csv -n "${OPERATORS_NS}" "${CSV_NAME}"
+
+# [OCP][RO] Inspect control plane spec, status and conditions
+oc get openstackcontrolplane "${CONTROLPLANE_NAME}" -n "${NS}" -o yaml
+
+# [OCP][RO] Read control plane readiness summary
+oc get openstackcontrolplane -n "${NS}"
+
+# [OCP][RO] List OpenStack service CRs currently installed in namespace
+oc api-resources --namespaced=true --verbs=list -o name | grep -Ei "(keystone|nova|neutron|glance|cinder|placement|ovn|galera|rabbitmq|memcached|horizon|octavia|manila|designate|barbican|ironic|heat|telemetry)"
+
+# [OCP][RO] List control plane deployments
+oc get deployments,statefulsets,daemonsets -n "${NS}" -o wide
+
+# [OCP][RO] List service pods and owning nodes
+oc get pods -n "${NS}" -o wide --show-labels
+
+# [OCP][RO] Inspect service endpoints and backend readiness
+oc get services,endpointslices -n "${NS}" -o wide
+
+# [OCP][RO] Inspect API routes
+oc get routes -n "${NS}"
+
+# [OCP][RO] Inspect TLS certificate status, if cert-manager installed
+oc get certificates.cert-manager.io -n "${NS}"
+
+# [OCP][RO] Inspect Secrets metadata only: NEVER retrieve .data
+oc get secrets -n "${NS}" -o custom-columns=NAME:.metadata.name,TYPE:.type,CREATED:.metadata.creationTimestamp
+
+# [OCP][RO] Inspect ConfigMap names and metadata without service credential values
+oc get configmaps -n "${NS}" -o custom-columns=NAME:.metadata.name,CREATED:.metadata.creationTimestamp
+
+# [OCP][RO] Inspect service pod controller ownerReferences
+oc get pod -n "${NS}" "${POD}" -o jsonpath="{.metadata.ownerReferences}"
+
+# [OCP][RO] Inspect StatefulSet ownerReferences
+oc get statefulset -n "${NS}" "${STATEFULSET}" -o jsonpath="{.metadata.ownerReferences}"
+
+# [OCP][RO] Inspect managed fields and field managers
+oc get "${KIND}" "${RESOURCE}" -n "${NS}" -o json | jq '.metadata.managedFields|map({manager,operation,time})'
+
+# [OCP][RO] Detect GitOps Application CRs (if installed)
+oc get applications.argoproj.io -A
+
+# [OCP][RO] Detect Argo CD ApplicationSet CRs (if installed)
+oc get applicationsets.argoproj.io -A
+
+# [OCP][RO] Detect Helm ownership on resource
+oc get "${KIND}" "${RESOURCE}" -n "${NS}" -o json | jq '.metadata.annotations|with_entries(select(.key|test("meta.helm.sh")))'
+
+# [OCP][RO] Find installed Helm releases (if helm configured)
+helm list -A
+
+# [OCP][RO] Inspect service-specific CR kind by exact name discovered from api-resources
+oc get "${SERVICE_CR_KIND}" -n "${NS}" -o wide
+
+# [OCP][RO] Inspect enabled services in operator-managed source spec
+oc get openstackcontrolplane "${CONTROLPLANE_NAME}" -n "${NS}" -o json | jq '.spec|keys'
+
+
+############################################################
+# 03. RHOSO EDPM DATA PLANE ADMINISTRATION
+############################################################
+# [OCP] manages data plane CRs and Ansible execution; [EDPM] host commands are run after approved SSH/access, not via oc exec into OCP node. A completed OpenStackDataPlaneDeployment does not automatically re-run after NodeSet edits.
+
+# [OCP][RO] Discover NodeSets
+oc get openstackdataplanenodesets -A
+
+# [OCP][RO] Discover deployments
+oc get openstackdataplanedeployments -A
+
+# [OCP][RO] Discover DataPlaneService resources
+oc get openstackdataplaneservices -A
+
+# [OCP][RO] Discover OpenStackAnsibleEE resources
+oc get openstackansibleee -A
+
+# [OCP][RO] Inspect NodeSet configuration and host inventory
+oc get openstackdataplanenodeset -n "${NS}" "${NODESET}" -o yaml
+
+# [OCP][RO] Inspect deployment readiness conditions
+oc get openstackdataplanedeployment -n "${NS}" "${DP_DEPLOYMENT}" -o yaml
+
+# [OCP][RO] Find Ansible execution resources for deployment
+oc get openstackansibleee -n "${NS}" -l "openstackdataplanedeployment=${DP_DEPLOYMENT}"
+
+# [OCP][RO] Find deployment Ansible Kubernetes Jobs
+oc get jobs -n "${NS}" -l "openstackdataplanedeployment=${DP_DEPLOYMENT}"
+
+# [OCP][RO] Discover Ansible EE pods
+oc get pods -n "${NS}" -l app=openstackansibleee -o wide
+
+# [OCP][RO] Retrieve bounded Ansible logs for selected EE pod
+oc logs -n "${NS}" "${ANSIBLE_POD}" --all-containers=true --since=60m
+
+# [OCP][RO] Inspect failed Ansible job logs via Job controller
+oc logs -n "${NS}" job/"${ANSIBLE_JOB}" --all-containers=true --since=60m
+
+# [OCP][RO] Inspect SSH-related secret NAMES only
+oc get secrets -n "${NS}" -o name | grep -Ei "ssh|edpm"
+
+# [OCP][RO] Check approved EDPM SSH connectivity without altering host
+ssh -o BatchMode=yes -o ConnectTimeout=5 "${EDPM_USER}@${EDPM_HOST}" true
+
+# [EDPM][RO] Check RHEL identity and version
+cat /etc/redhat-release && hostname -f
+
+# [EDPM][RO] Discover failed systemd units
+sudo systemctl --failed --no-pager
+
+# [EDPM][RO] List service unit names
+systemctl list-units --type=service --all --no-pager
+
+# [EDPM][RO] Check discovered Nova Compute service status
+sudo systemctl status "${NOVA_COMPUTE_UNIT}" --no-pager
+
+# [EDPM][RO] Discover services related to OpenStack/OVN/libvirt
+systemctl list-unit-files | grep -Ei "nova|ovn|ovs|virt|libvir|qemu"
+
+# [EDPM][RO] List Podman containers
+sudo podman ps -a --format "table {{.Names}} {{.Status}} {{.Image}}"
+
+# [EDPM][RO] Read selected container log
+sudo podman logs --since 30m "${CONTAINER}"
+
+# [EDPM][RO] Find OVN and Nova processes
+ps -eo pid,args | grep -Ei "[n]ova-compute|[o]vn-controller|[l]ibvirtd|[v]irtqemud"
+
+# [EDPM][RO] Check KVM and virtualization modules
+lsmod | grep -E "^(kvm|vfio)"
+
+# [EDPM][RO] Inspect NUMA topology
+lscpu -e=CPU,NODE,SOCKET,CORE,ONLINE
+
+# [EDPM][RO] Inspect CPU NUMA node summary
+numactl --hardware
+
+# [EDPM][RO] Inspect hugepages and memory
+grep -Ei "HugePages|Hugepagesize|MemTotal|MemAvailable" /proc/meminfo
+
+# [EDPM][RO] Inspect CPU isolation and boot configuration
+cat /proc/cmdline
+
+# [EDPM][RO] Inspect isolated CPUs where configured
+cat /sys/devices/system/cpu/isolated
+
+# [EDPM][RO] List PCI NICs and accelerators
+lspci -nn | grep -Ei "ethernet|network|vf|accelerator"
+
+# [EDPM][RO] Inspect SR-IOV VF count (select interface)
+cat "/sys/class/net/${NIC}/device/sriov_numvfs"
+
+# [EDPM][RO] Inspect bound PCI drivers
+lspci -nnk
+
+# [EDPM][RO] Inspect DPDK NIC binding if tool installed
+sudo dpdk-devbind.py --status
+
+# [EDPM][RO] Inspect Linux interfaces and MTU
+ip -details link show
+
+# [EDPM][RO] Inspect VLAN interfaces
+ip -d link show type vlan
+
+# [EDPM][RO] Inspect bonding status if Linux bonding configured
+cat "/proc/net/bonding/${BOND_NAME}"
+
+# [EDPM][RO] Inspect IP addresses
+ip -br address
+
+# [EDPM][RO] Inspect routes and selected next-hop
+ip route show table all
+
+# [EDPM][RO] Inspect policy routing
+ip rule show
+
+# [EDPM][RO] Inspect DNS resolver state
+resolvectl status
+
+# [EDPM][RO] Inspect network profiles
+nmcli connection show
+
+# [EDPM][RO] Inspect NIC link
+ethtool "${NIC}"
+
+# [EDPM][RO] Inspect LACP/bond status where OVS bond used
+sudo ovs-appctl bond/show
+
+# [EDPM][RO] Inspect chrony synchronization
+chronyc tracking && chronyc sources -v
+
+# [EDPM][RO] Inspect filesystems and inodes
+df -hT && df -i
+
+# [EDPM][RO] Inspect recent kernel errors
+sudo journalctl -k --since "1 hour ago" -p warning --no-pager
+
+# [EDPM][RO] Inspect host OS and package versions
+uname -r && rpm -q openstack-nova-compute ovn-host openvswitch --quiet; rpm -qa | grep -Ei "openstack-nova|ovn|openvswitch"
+
+
+############################################################
+# 04. OPENSTACK CLIENT AND API ACCESS
+############################################################
+
+# [OCP][RO] Discover actual container name in selected OpenStackClient pod
+oc get pod -n "${NS}" "${OS_CLIENT_POD}" -o 'jsonpath={.spec.containers[*].name}{"\n"}'
+
+# Red Hat documented default: oc rsh -n openstack openstackclient. For nondefault namespace use $NS; do not rely on a workstation OpenStack CLI. Credentials are provisioned in OpenStackClient; do not print environment variables or tokens.
+
+# [OCP][RO] Discover OpenStackClient pod in selected RHOSO namespace
+oc get pods -n "${NS}" -o wide | grep -Ei "^openstackclient[[:space:]-]"
+
+# [OCP][RO] Access documented default client interactively
+oc rsh -n openstack openstackclient
+
+# [OCP][RO] Access discovered client and container interactively
+oc rsh -n "${NS}" -c "${OS_CLIENT_CONTAINER}" "${OS_CLIENT_POD}"
+
+# [OCP][RO] Run version check from OCP without printing credentials
+oc exec -n "${NS}" "${OS_CLIENT_POD}" -c "${OS_CLIENT_CONTAINER}" -- openstack --version
+
+# [OS][RO] Validate token issuance without exposing token
+openstack token issue -f value -c expires
+
+# [OS][RO] Inspect service catalog
+openstack catalog list
+
+# [OS][RO] Inspect registered services
+openstack service list
+
+# [OS][RO] Inspect API endpoint registration
+openstack endpoint list
+
+# [OS][RO] Inspect accessible regions
+openstack region list
+
+# [OS][RO] Identify scoped authentication using nonsecret fields
+openstack configuration show --mask
+
+# [OS][RO] Discover CLI extensions and subcommands
+openstack --help
+
+# [OS][RO] Discover optional service-specific command flags
+openstack server create --help
+
+# [OS][RO] Read server API operations
+openstack server list --limit 1
+
+# [OS][RO] Read network API operations
+openstack network list
+
+# [OS][RO] Read image API operations
+openstack image list
+
+# [OS][RO] Read block storage API operations where enabled
+openstack volume list
+
+
+############################################################
+# 05. NOVA COMPUTE, CELLS AND PLACEMENT
+############################################################
+# nova-manage commands execute inside a discovered Nova conductor container (not OpenStackClient). [CHANGE] discover_hosts writes cell host mappings; list_cells/list_hosts are read-only. In multi-cell topologies identify intended conductor/cell using CR configuration. Never expose list_cells output in tickets without redacting DB/transport URLs.
+
+# [OS][RO] List Compute service states
+openstack compute service list
+
+# [OS][RO] Inspect compute service host in listing
+openstack compute service list --host "${COMPUTE_HOST}"
+
+# [OS][RO] List registered hypervisors
+openstack hypervisor list
+
+# [OS][RO] Inspect hypervisor resources
+openstack hypervisor show "${COMPUTE_HOST}"
+
+# [OS][RO] Inspect aggregated hypervisor capacity
+openstack hypervisor stats show
+
+# [OS][RO] List host aggregates
+openstack aggregate list
+
+# [OS][RO] Inspect host aggregate members and properties
+openstack aggregate show "${AGGREGATE}"
+
+# [OS][RO] List availability zones
+openstack availability zone list --compute
+
+# [OS][RO] List server groups
+openstack server group list
+
+# [OS][RO] Inspect affinity/anti-affinity policy
+openstack server group show "${SERVER_GROUP}"
+
+# [OS][CHANGE] Create anti-affinity server group (change; verify scheduler policy and group quotas first)
+openstack server group create --policy anti-affinity "${SERVER_GROUP}"
+
+# [OS][RO] List all instance projects
+openstack server list --all-projects --long
+
+# [OS][RO] List VMs resident on compute host
+openstack server list --all-projects --host "${COMPUTE_HOST}"
+
+# [OS][RO] Inspect VM state and fault message
+openstack server show "${VM}" -f yaml
+
+# [OS][RO] Retrieve VM console log
+openstack console log show "${VM}"
+
+# [OS][RO] List VM associated ports
+openstack port list --server "${VM}"
+
+# [OS][RO] List attached volumes
+openstack server volume list "${VM}"
+
+# [OS][RO] List live and cold migration records
+openstack server migration list --server "${VM}"
+
+# [OS][RO] Inspect migration status
+openstack server migration show "${VM}" "${MIGRATION_ID}"
+
+# [OS][RO] Check available resize flavors
+openstack flavor list --long
+
+# [OS][RO] Inspect selected flavor extra specs
+openstack flavor show "${FLAVOR}"
+
+# [OS][RO] List project compute quotas
+openstack quota show --compute "${PROJECT_ID}"
+
+# [OS][RO] Inspect limit of VM aggregates and project usages
+openstack limits show --absolute
+
+# [OCP][RO] Discover Nova conductor pods in RHOSO namespace
+oc get pods -n "${NS}" -o wide | grep -E "nova.*conductor"
+
+# [OCP][RO] Discover container names of chosen conductor pod
+oc get pod -n "${NS}" "${NOVA_CONDUCTOR_POD}" -o 'jsonpath={.spec.containers[*].name}{"\n"}'
+
+# [OCP][RO] Read nova-manage cell command help from actual image
+oc exec -n "${NS}" "${NOVA_CONDUCTOR_POD}" -c "${NOVA_CONDUCTOR_CONTAINER}" -- nova-manage cell_v2 --help
+
+# [OCP][RO] List Nova cells (contains sensitive transport/DB connection endpoints; redact before sharing)
+oc exec -n "${NS}" "${NOVA_CONDUCTOR_POD}" -c "${NOVA_CONDUCTOR_CONTAINER}" -- nova-manage cell_v2 list_cells
+
+# [OCP][RO] List host mappings by cell
+oc exec -n "${NS}" "${NOVA_CONDUCTOR_POD}" -c "${NOVA_CONDUCTOR_CONTAINER}" -- nova-manage cell_v2 list_hosts
+
+# [OCP][CHANGE] Discover cell hosts after approved new compute registration (writes mappings; NOT health-check safe)
+oc exec -n "${NS}" "${NOVA_CONDUCTOR_POD}" -c "${NOVA_CONDUCTOR_CONTAINER}" -- nova-manage cell_v2 discover_hosts --verbose
+
+# [OCP][RO] Inspect Nova version from selected conductor image
+oc exec -n "${NS}" "${NOVA_CONDUCTOR_POD}" -c "${NOVA_CONDUCTOR_CONTAINER}" -- nova-manage version
+
+# [OS][RO] List Placement resource providers (plugin required)
+openstack resource provider list
+
+# [OS][RO] Inspect resource provider
+openstack resource provider show "${RESOURCE_PROVIDER_UUID}"
+
+# [OS][RO] List per-provider inventories
+openstack resource provider inventory list "${RESOURCE_PROVIDER_UUID}"
+
+# [OS][RO] List provider current usage
+openstack resource provider usage show "${RESOURCE_PROVIDER_UUID}"
+
+# [OS][RO] List resource provider traits
+openstack resource provider trait list "${RESOURCE_PROVIDER_UUID}"
+
+# [OS][RO] List resource provider aggregates
+openstack resource provider aggregate list "${RESOURCE_PROVIDER_UUID}"
+
+# [OS][RO] List Placement allocations of consumer
+openstack resource provider allocation show "${VM_UUID}"
+
+# [OS][RO] Inspect server group anti-affinity topology
+openstack server group show "${SERVER_GROUP}"
+
+# [EDPM][RO] Inspect PCI devices from selected host
+lspci -nnk
+
+# [EDPM][RO] Inspect NUMA topology and memory affinity
+numastat -m
+
+# [EDPM][RO] Inspect libvirt domain XML if authorized and VM hosted here
+sudo virsh dumpxml "${LIBVIRT_DOMAIN}"
+
+# [OCP][RO] Review Nova scheduler service log around original request ID
+oc logs -n "${NS}" "${NOVA_SCHEDULER_POD}" -c "${NOVA_SCHEDULER_CONTAINER}" --since=60m | grep -F "${REQUEST_ID}"
+
+# [OCP][RO] Review conductor service log around request ID
+oc logs -n "${NS}" "${NOVA_CONDUCTOR_POD}" -c "${NOVA_CONDUCTOR_CONTAINER}" --since=60m | grep -F "${REQUEST_ID}"
+
+# [OS][CHANGE] Resize VM after planning capacity and guest compatibility
+openstack server resize --flavor "${NEW_FLAVOR}" "${VM}"
+
+# [OS][CHANGE] Soft reboot guest after workload owner consent
+openstack server reboot --soft "${VM}"
+
+# [OS][CHANGE] Hard reboot ONLY with workload and data integrity approval
+openstack server reboot --hard "${VM}"
+
+# [OS][CHANGE] Shelve VM after checking snapshot/capacity impact
+openstack server shelve "${VM}"
+
+# [OS][CHANGE] Unshelve VM after verifying placement capacity
+openstack server unshelve "${VM}"
+
+# [OS][CHANGE] Start stopped instance
+openstack server start "${VM}"
+
+# [OS][CHANGE] Stop instance after planned downtime notification
+openstack server stop "${VM}"
+
+# [OS][CHANGE] Create purpose-built test flavor
+openstack flavor create --vcpus "${VCPU_COUNT}" --ram "${RAM_MIB}" --disk "${DISK_GIB}" "${FLAVOR}"
+
+# [OS][CHANGE] Set approved flavor extra spec; coordinate scheduler, NUMA or PCI policy
+openstack flavor set --property "${FLAVOR_EXTRA_KEY}=${FLAVOR_EXTRA_VALUE}" "${FLAVOR}"
+
+# [OS][RO] Inspect quota update arguments before authorized adjustment
+openstack quota set --help
+
+# [OS][CHANGE] Create project host aggregate only after tenancy/AZ design review
+openstack aggregate create "${AGGREGATE}"
+
+# [OS][CHANGE] Add hypervisor host to aggregate after scheduler compatibility review
+openstack aggregate add host "${AGGREGATE}" "${COMPUTE_HOST}"
+
+
+############################################################
+# 06. NEUTRON NETWORK ADMINISTRATION
+############################################################
+# Provider network creation requires physnet->bridge mappings, upstream VLAN/L2 reachability and IPAM approval. Agents list in OVN deployments may not show every distributed function; correlate Neutron ports with OVN SB chassis and bindings.
+
+# [OS][RO] Inspect network-agent state
+openstack network agent list
+
+# [OS][RO] Inspect selected agent record
+openstack network agent show "${AGENT_ID}"
+
+# [OS][RO] List networks and IDs
+openstack network list --long
+
+# [OS][RO] Inspect network provider segmentation, MTU and flags
+openstack network show "${NETWORK}" -f yaml
+
+# [OS][RO] List subnets
+openstack subnet list --long
+
+# [OS][RO] Inspect subnet DHCP, DNS and routes
+openstack subnet show "${SUBNET}" -f yaml
+
+# [OS][RO] List routers
+openstack router list --long
+
+# [OS][RO] Inspect router gateway and attached ports
+openstack router show "${ROUTER}" -f yaml
+
+# [OS][RO] List ports including binding host
+openstack port list --long
+
+# [OS][RO] Inspect binding details, security settings and allowed pairs
+openstack port show "${PORT_ID}" -f yaml
+
+# [OS][RO] List floating IPs
+openstack floating ip list --long
+
+# [OS][RO] Inspect selected floating IP mapping
+openstack floating ip show "${FLOATING_IP_ID}" -f yaml
+
+# [OS][RO] List network security groups
+openstack security group list
+
+# [OS][RO] List individual security group rules
+openstack security group rule list "${SECURITY_GROUP}"
+
+# [OS][RO] Inspect network QoS policies
+openstack network qos policy list
+
+# [OS][RO] Inspect QoS rules on policy
+openstack network qos rule list "${QOS_POLICY}"
+
+# [OS][RO] List RBAC grants to shared networks
+openstack network rbac list
+
+# [OS][RO] Inspect network RBAC record
+openstack network rbac show "${RBAC_ID}"
+
+# [OS][RO] List trunk ports (extension required)
+openstack network trunk list
+
+# [OS][RO] Inspect trunk children
+openstack network trunk show "${TRUNK_ID}"
+
+# [OS][RO] List network segments (extension required)
+openstack network segment list
+
+# [OS][RO] Inspect network availability zones
+openstack availability zone list --network
+
+# [EDPM][RO] Verify interface MTU on compute host
+ip link show "${NIC}"
+
+# [OS][RO] Inspect per-network DHCP settings
+openstack subnet show "${TENANT_SUBNET}" -c enable_dhcp -c dns_nameservers -c host_routes
+
+# [EDPM][RO] Read metadata agent/OVN metadata logs from discovered podman container
+sudo podman logs --since 30m "${OVN_METADATA_CONTAINER}"
+
+# [OS][CHANGE] Create provider flat network only if physnet bridge mappings validated
+openstack network create --external --provider-network-type flat --provider-physical-network "${PHYSNET}" "${EXTERNAL_NETWORK_NAME}"
+
+# [OS][CHANGE] Create provider VLAN network only if upstream VLAN approved
+openstack network create --external --provider-network-type vlan --provider-physical-network "${PHYSNET}" --provider-segment "${VLAN_ID}" "${EXTERNAL_NETWORK_NAME}"
+
+# [OS][CHANGE] Create external subnet with approved allocation pool
+openstack subnet create --network "${EXTERNAL_NETWORK_NAME}" --subnet-range "${EXTERNAL_NETWORK_CIDR}" --gateway "${EXTERNAL_GATEWAY}" --allocation-pool "start=${EXTERNAL_POOL_START},end=${EXTERNAL_POOL_END}" --no-dhcp "${EXTERNAL_SUBNET_NAME}"
+
+# [OS][CHANGE] Create project overlay network using configured ML2 default type
+openstack network create "${TENANT_NETWORK_NAME}"
+
+# [OS][CHANGE] Create tenant subnet with DHCP and DNS
+openstack subnet create --network "${TENANT_NETWORK_NAME}" --subnet-range "${PRIVATE_NETWORK_CIDR}" --dns-nameserver "${DNS_SERVER}" "${TENANT_SUBNET_NAME}"
+
+# [OS][CHANGE] Create project router
+openstack router create "${ROUTER_NAME}"
+
+# [OS][CHANGE] Attach tenant subnet to router
+openstack router add subnet "${ROUTER_NAME}" "${TENANT_SUBNET_NAME}"
+
+# [OS][CHANGE] Set external router gateway after provider path is verified
+openstack router set --external-gateway "${EXTERNAL_NETWORK_NAME}" "${ROUTER_NAME}"
+
+# [OS][CHANGE] Create security group for test workload
+openstack security group create "${SECURITY_GROUP}"
+
+# [OS][CHANGE] Permit ICMP ingress from approved probe CIDR only
+openstack security group rule create --ingress --protocol icmp --remote-ip "${AUTHORIZED_SOURCE_CIDR}" "${SECURITY_GROUP}"
+
+# [OS][CHANGE] Permit SSH ingress from approved probe CIDR only
+openstack security group rule create --ingress --protocol tcp --dst-port 22 --remote-ip "${AUTHORIZED_SOURCE_CIDR}" "${SECURITY_GROUP}"
+
+# [OS][CHANGE] Allocate floating IP from provider network
+openstack floating ip create "${EXTERNAL_NETWORK_NAME}"
+
+# [OS][CHANGE] Associate floating IP with one VM
+openstack server add floating ip "${VM}" "${FLOATING_IP_ADDRESS}"
+
+# [OS][RO] Inspect public/provider network and segmentation
+openstack network show "${EXTERNAL_NETWORK_NAME}" -f yaml
+
+# [OS][CHANGE] Create Neutron port on tenant network with approved security group
+openstack port create --network "${TENANT_NETWORK_NAME}" --security-group "${SECURITY_GROUP}" "${PORT_NAME}"
+
+# [OS][CHANGE] Add approved allowed-address-pairs on specified port
+openstack port set --allowed-address ip-address="${ALLOWED_IP}" "${PORT_ID}"
+
+# [OS][CHANGE] Disable port security only after an explicit risk acceptance
+openstack port set --disable-port-security "${PORT_ID}"
+
+# [OS][CHANGE] Create scoped network QoS policy
+openstack network qos policy create "${QOS_POLICY}"
+
+# [OS][CHANGE] Add egress bandwidth limit; validate QoS backend capability
+openstack network qos rule create --type bandwidth-limit --max-kbps "${MAX_KBPS}" --egress "${QOS_POLICY}"
+
+# [OS][CHANGE] Create network RBAC shared access grant to approved project
+openstack network rbac create --type network --action access_as_shared --target-project "${TARGET_PROJECT_ID}" "${NETWORK}"
+
+# [OS][CHANGE] Create trunk with pre-existing parent port; extension required
+openstack network trunk create --parent-port "${PARENT_PORT_ID}" "${TRUNK_NAME}"
+
+
+############################################################
+# 07. OVN NORTHBOUND, SOUTHBOUND AND OPEN VSWITCH
+############################################################
+# RHOSO 18.0 migration documentation confirms oc exec ovsdbserver-nb-0 -- ovn-nbctl show and ovsdbserver-sb-0 -- ovn-sbctl list Chassis, but names are topology-dependent. Discover matching NB/SB pods first. Some tools may need --db URL/TLS; do not assume local socket. OVN inspection is operational debugging; do not mutate NB/SB DB outside Neutron/operator reconciliation.
+
+# [OCP][RO] Discover OVN CRs and control plane resources
+oc api-resources --verbs=list | grep -Ei "ovn|ovsdb"
+
+# [OCP][RO] Discover OVN control plane pods
+oc get pods -n "${NS}" -o wide | grep -Ei "ovsdb|ovn-northd|ovn-controller"
+
+# [OCP][RO] Inspect all container names for selected NB database pod
+oc get pod -n "${NS}" "${OVN_NB_POD}" -o 'jsonpath={.spec.containers[*].name}{"\n"}'
+
+# [OCP][RO] Inspect all container names for selected SB database pod
+oc get pod -n "${NS}" "${OVN_SB_POD}" -o 'jsonpath={.spec.containers[*].name}{"\n"}'
+
+# [OCP][RO] Display northbound logical topology using validated RHOSO pod execution
+oc exec -n "${NS}" "${OVN_NB_POD}" -c "${OVN_NB_CONTAINER}" -- ovn-nbctl show
+
+# [OCP][RO] List northbound logical switches
+oc exec -n "${NS}" "${OVN_NB_POD}" -c "${OVN_NB_CONTAINER}" -- ovn-nbctl ls-list
+
+# [OCP][RO] List northbound logical routers
+oc exec -n "${NS}" "${OVN_NB_POD}" -c "${OVN_NB_CONTAINER}" -- ovn-nbctl lr-list
+
+# [OCP][RO] List logical switch ports of chosen switch
+oc exec -n "${NS}" "${OVN_NB_POD}" -c "${OVN_NB_CONTAINER}" -- ovn-nbctl lsp-list "${OVN_SWITCH}"
+
+# [OCP][RO] List logical router ports
+oc exec -n "${NS}" "${OVN_NB_POD}" -c "${OVN_NB_CONTAINER}" -- ovn-nbctl lrp-list "${OVN_ROUTER}"
+
+# [OCP][RO] List logical router NAT rules
+oc exec -n "${NS}" "${OVN_NB_POD}" -c "${OVN_NB_CONTAINER}" -- ovn-nbctl lr-nat-list "${OVN_ROUTER}"
+
+# [OCP][RO] List logical switch ACLs
+oc exec -n "${NS}" "${OVN_NB_POD}" -c "${OVN_NB_CONTAINER}" -- ovn-nbctl acl-list "${OVN_SWITCH}"
+
+# [OCP][RO] List northbound load balancers
+oc exec -n "${NS}" "${OVN_NB_POD}" -c "${OVN_NB_CONTAINER}" -- ovn-nbctl lb-list
+
+# [OCP][RO] Inspect OVN DHCP option rows
+oc exec -n "${NS}" "${OVN_NB_POD}" -c "${OVN_NB_CONTAINER}" -- ovn-nbctl list DHCP_Options
+
+# [OCP][RO] Inspect northbound HA chassis groups
+oc exec -n "${NS}" "${OVN_NB_POD}" -c "${OVN_NB_CONTAINER}" -- ovn-nbctl list HA_Chassis_Group
+
+# [OCP][UNVERIFIED] Inspect NB database leader and cluster status via schema-specific local OVSDB; locally verify socket first
+oc exec -n "${NS}" "${OVN_NB_POD}" -c "${OVN_NB_CONTAINER}" -- ovsdb-client list-dbs
+
+# [OCP][RO] Show southbound topology
+oc exec -n "${NS}" "${OVN_SB_POD}" -c "${OVN_SB_CONTAINER}" -- ovn-sbctl show
+
+# [OCP][RO] List OVN registered chassis
+oc exec -n "${NS}" "${OVN_SB_POD}" -c "${OVN_SB_CONTAINER}" -- ovn-sbctl chassis-list
+
+# [OCP][RO] Inspect southbound chassis and encapsulation information
+oc exec -n "${NS}" "${OVN_SB_POD}" -c "${OVN_SB_CONTAINER}" -- ovn-sbctl list Chassis
+
+# [OCP][RO] Inspect chassis-private heartbeat metadata
+oc exec -n "${NS}" "${OVN_SB_POD}" -c "${OVN_SB_CONTAINER}" -- ovn-sbctl list Chassis_Private
+
+# [OCP][RO] Inspect southbound port bindings
+oc exec -n "${NS}" "${OVN_SB_POD}" -c "${OVN_SB_CONTAINER}" -- ovn-sbctl list Port_Binding
+
+# [OCP][RO] Inspect specific port binding by logical port name
+oc exec -n "${NS}" "${OVN_SB_POD}" -c "${OVN_SB_CONTAINER}" -- ovn-sbctl --columns=logical_port,chassis,datapath,up find Port_Binding logical_port="${OVN_LOGICAL_PORT}"
+
+# [OCP][RO] Inspect southbound datapath bindings
+oc exec -n "${NS}" "${OVN_SB_POD}" -c "${OVN_SB_CONTAINER}" -- ovn-sbctl list Datapath_Binding
+
+# [OCP][RO] Inspect logical southbound flow table by logical datapath
+oc exec -n "${NS}" "${OVN_SB_POD}" -c "${OVN_SB_CONTAINER}" -- ovn-sbctl lflow-list "${OVN_DATAPATH}"
+
+# [OCP][RO] Inspect northd service logs and sync errors
+oc logs -n "${NS}" "${OVN_NORTHD_POD}" --since=30m --all-containers=true
+
+# [EDPM][RO] Inspect selected OVN controller service logs
+sudo journalctl -u "${OVN_CONTROLLER_UNIT}" --since "1 hour ago" --no-pager
+
+# [EDPM][RO] Inspect running OVN controller container logs if containerized
+sudo podman logs --since 30m "${OVN_CONTROLLER_CONTAINER}"
+
+# [EDPM][RO] Inspect OVS topology on EDPM node
+sudo ovs-vsctl show
+
+# [EDPM][RO] List OVS bridges
+sudo ovs-vsctl list-br
+
+# [EDPM][RO] Inspect br-int interfaces
+sudo ovs-vsctl list-ports br-int
+
+# [EDPM][RO] Inspect physical provider bridge ports
+sudo ovs-vsctl list-ports "${PROVIDER_BRIDGE}"
+
+# [EDPM][RO] Inspect OVS interface details
+sudo ovs-vsctl list Interface
+
+# [EDPM][RO] Inspect external IDs including encap address and mappings (potentially internal metadata)
+sudo ovs-vsctl get Open_vSwitch . external_ids
+
+# [EDPM][RO] Inspect OVS database manager status
+sudo ovs-vsctl list Open_vSwitch
+
+# [EDPM][RO] Inspect br-int OpenFlow pipeline (can be large)
+sudo ovs-ofctl -O OpenFlow13 dump-flows br-int
+
+# [EDPM][RO] Inspect OpenFlow 13 table stats
+sudo ovs-ofctl -O OpenFlow13 dump-tables br-int
+
+# [EDPM][RO] Read OVN controller connection status (local control socket required)
+sudo ovn-appctl -t ovn-controller connection-status
+
+# [EDPM][RO] Show OVN runtime logical-to-physical flows (local control socket required)
+sudo ovn-appctl -t ovn-controller lflow-list
+
+# [OCP][RO] Display ovn-trace supported syntax from actual NB tool image
+oc exec -n "${NS}" "${OVN_NB_POD}" -c "${OVN_NB_CONTAINER}" -- ovn-trace --help
+
+# [OCP][UNVERIFIED] Trace a packet through logical switch; match expression must describe actual ingress packet; verify tool path
+oc exec -n "${NS}" "${OVN_NB_POD}" -c "${OVN_NB_CONTAINER}" -- ovn-trace "${OVN_SWITCH}" "${OVN_TRACE_FLOW}"
+
+# [EDPM][RO] Trace OVS physical packet; requires exact in_port and real packet header values, capture only
+sudo ovs-appctl ofproto/trace br-int "${OVS_TRACE_FLOW}"
+
+# [OCP][RO] Inspect OVN SB DB schema
+oc exec -n "${NS}" "${OVN_SB_POD}" -c "${OVN_SB_CONTAINER}" -- ovn-sbctl --help
+
+
+############################################################
+# 08. CINDER BLOCK STORAGE ADMINISTRATION
+############################################################
+# State-changing volume migration, retype, encryption and backups require storage driver capability and data-protection review. [OS] Cinder API; [EDPM] attach path and multipath; [CEPH] RBD backend.
+
+# [OS][RO] List Cinder backends and enabled/down state
+openstack volume service list --long
+
+# [OS][RO] List Cinder volumes including projects
+openstack volume list --all-projects --long
+
+# [OS][RO] Inspect volume status and attachments
+openstack volume show "${VOLUME}" -f yaml
+
+# [OS][RO] List volume types
+openstack volume type list --long
+
+# [OS][RO] Inspect backend-name type mapping
+openstack volume type show "${VOLUME_TYPE}"
+
+# [OS][RO] List volume snapshots
+openstack volume snapshot list --all-projects
+
+# [OS][RO] Inspect snapshot
+openstack volume snapshot show "${SNAPSHOT}"
+
+# [OS][RO] List volume backups
+openstack volume backup list --all-projects
+
+# [OS][RO] Inspect volume backup
+openstack volume backup show "${BACKUP}"
+
+# [OS][RO] Inspect volume project quota
+openstack quota show --volume "${PROJECT_ID}"
+
+# [OS][UNVERIFIED] List volume migrations and metadata from show
+openstack volume show "${VOLUME}" -c migration_status -c os-vol-mig-status-attr:migstat
+
+# [OS][RO] Inspect volume encryption type for selected type
+openstack volume type show "${VOLUME_TYPE}" -f yaml
+
+# [EDPM][RO] Inspect multipath maps (iSCSI/FC only)
+sudo multipath -ll
+
+# [EDPM][RO] Inspect iSCSI sessions, if using iSCSI
+sudo iscsiadm -m session
+
+# [EDPM][RO] Check relevant kernel storage errors
+sudo journalctl -k --since "1 hour ago" --no-pager | grep -Ei "iscsi|multipath|rbd|blk|nvme|scsi"
+
+# [OCP][RO] Discover Cinder controller pods
+oc get pods -n "${NS}" | grep -i cinder
+
+# [OCP][RO] Read selected Cinder scheduler logs
+oc logs -n "${NS}" "${CINDER_SCHEDULER_POD}" --since=30m --all-containers=true
+
+# [OCP][RO] Read selected Cinder volume logs (may run in control plane or external backend role)
+oc logs -n "${NS}" "${CINDER_VOLUME_POD}" --since=30m --all-containers=true
+
+# [OS][CHANGE] Create volume with approved backend volume type
+openstack volume create --size "${VOLUME_SIZE_GIB}" --type "${VOLUME_TYPE}" "${VOLUME_NAME}"
+
+# [OS][CHANGE] Create volume snapshot after app-consistency considerations
+openstack volume snapshot create --volume "${VOLUME}" "${SNAPSHOT}"
+
+# [OS][CHANGE] Create volume backup if backup service enabled
+openstack volume backup create --name "${BACKUP_NAME}" "${VOLUME}"
+
+# [OS][CHANGE] Extend detached or safely online-expandable volume (no shrink)
+openstack volume set --size "${NEW_VOLUME_SIZE_GIB}" "${VOLUME}"
+
+# [OS][CHANGE] Retype volume after capability/impact review
+openstack volume set --type "${NEW_VOLUME_TYPE}" --retype-policy on-demand "${VOLUME}"
+
+# [OS][CHANGE] Attach approved volume to instance
+openstack server add volume "${VM}" "${VOLUME}"
+
+# [OS][CHANGE] Detach after workload/file system coordination
+openstack server remove volume "${VM}" "${VOLUME}"
+
+# [OS][RO] Inspect Cinder migration command supported flags before planned backend move
+openstack volume migrate --help
+
+# [OS][UNVERIFIED] Inspect volume type encryption settings if encryption plugin installed
+openstack volume type encryption show "${VOLUME_TYPE}"
+
+# [OCP][RO] Inspect Glance/Cinder configured storage backend resources from operator CR
+oc get openstackcontrolplane "${CONTROLPLANE_NAME}" -n "${NS}" -o json | jq ".spec | {glance,cinder,nova}"
+
+
+############################################################
+# 09. CEPH STORAGE ADMINISTRATION
+############################################################
+# Run only in the actual Red Hat Ceph Storage or external Ceph admin environment with corresponding credentials; for ODF/Rook discover namespace/toolbox via its supported tooling. Ceph CLI is NOT assumed inside OpenStackClient. Do not edit RBD locks or OSD state from this reference.
+# [CEPH][RO] Inspect Ceph health and detail
+ceph -s && ceph health detail
+
+# [CEPH][RO] Inspect Ceph monitor quorum
+ceph quorum_status --format json-pretty
+
+# [CEPH][RO] Inspect Ceph monitors
+ceph mon dump
+
+# [CEPH][RO] Inspect active manager modules
+ceph mgr dump --format json-pretty
+
+# [CEPH][RO] Inspect OSD tree
+ceph osd tree
+
+# [CEPH][RO] Inspect OSD counts and states
+ceph osd stat
+
+# [CEPH][RO] Inspect per-OSD usage
+ceph osd df tree
+
+# [CEPH][RO] Inspect OSD performance latency
+ceph osd perf
+
+# [CEPH][RO] Inspect placement-group status
+ceph pg stat
+
+# [CEPH][RO] Inspect degraded PGs in health detail
+ceph health detail
+
+# [CEPH][RO] Inspect pool-level utilization
+ceph df detail
+
+# [CEPH][RO] List pools with details
+ceph osd pool ls detail
+
+# [CEPH][RO] Review CRUSH hierarchy
+ceph osd crush tree
+
+# [CEPH][RO] Inspect CRUSH rules
+ceph osd crush rule ls
+
+# [CEPH][RO] Inspect Ceph network addresses
+ceph mon dump
+
+# [CEPH][RO] Inspect total and free capacity
+ceph df
+
+# [CEPH][RO] Inspect recovery and misplaced objects
+ceph -s
+
+# [CEPH][RO] List Ceph orchestrator services if cephadm is deployed
+ceph orch ls
+
+# [CEPH][RO] List daemons if cephadm is deployed
+ceph orch ps
+
+# [CEPH][RO] List RBD images within approved Glance pool
+rbd ls -p "${GLANCE_POOL}"
+
+# [CEPH][RO] List RBD images within approved Cinder pool
+rbd ls -p "${CINDER_POOL}"
+
+# [CEPH][RO] List RBD images within approved Nova ephemeral pool
+rbd ls -p "${NOVA_POOL}"
+
+# [CEPH][RO] Inspect RBD image metadata
+rbd info "${POOL}/${RBD_IMAGE}"
+
+# [CEPH][RO] Inspect image snapshot metadata
+rbd snap ls "${POOL}/${RBD_IMAGE}"
+
+# [CEPH][RO] Inspect active RBD locks
+rbd lock list "${POOL}/${RBD_IMAGE}"
+
+# [CEPH][RO] Inspect in-use client watchers
+rbd status "${POOL}/${RBD_IMAGE}"
+
+# [CEPH][RO] Inspect Ceph client identities without dumping key material
+ceph auth ls | grep -E "^(client|osd|mgr|mon)"
+
+# [OCP][RO] Discover ODF CephCluster namespace where present
+oc get cephclusters.ceph.rook.io -A
+
+# [OCP][RO] Inspect ODF CephCluster status (where installed)
+oc get cephclusters.ceph.rook.io -A -o wide
+
+# [OCP][RO] Discover ODF storage cluster resources
+oc get storageclusters.ocs.openshift.io -A
+
+# [CEPH][RO] Inspect exact ceph rbd pool assigned to services in authoritative deployment configuration
+ceph osd pool ls
+
+# [OCP][RO] Discover ODF topology and Ceph pod inventory, when using ODF
+oc get pods -A | grep -Ei "rook-ceph|ocs"
+
+
+############################################################
+# 10. GLANCE IMAGE ADMINISTRATION
+############################################################
+# Images require verified source, image license, checksum and architecture/boot compatibility. Do not use an arbitrary URL as a trusted test image.
+
+# [OS][RO] List images and visibility
+openstack image list --long
+
+# [OS][RO] Inspect image formats and checksum fields
+openstack image show "${IMAGE}" -f yaml
+
+# [OS][RO] Inspect image sharing membership
+openstack image member list "${IMAGE}"
+
+# [OS][RO] Inspect image import feature options
+openstack image import --help
+
+# [OS][RO] Inspect image API capabilities
+openstack image create --help
+
+# [OCP][RO] Verify downloaded local image SHA256 before upload
+sha256sum "${IMAGE_FILE}"
+
+# [OS][CHANGE] Upload verified local qcow2 image from OpenStackClient filesystem
+openstack image create --disk-format qcow2 --container-format bare --file "${IMAGE_FILE}" --private "${IMAGE_NAME}"
+
+# [OS][CHANGE] Set image property as approved
+openstack image set --property "${PROPERTY_KEY}=${PROPERTY_VALUE}" "${IMAGE}"
+
+# [OS][CHANGE] Share image with target project (image must use shared visibility)
+openstack image set --shared "${IMAGE}"
+
+# [OS][CHANGE] Add image share member for project
+openstack image add project "${IMAGE}" "${PROJECT_ID}"
+
+# [OS][CHANGE] Accept shared image from receiving project
+openstack image set --accept "${IMAGE}"
+
+# [OS][CHANGE] Download image only if policy permits local data copy
+openstack image save --file "${DOWNLOAD_PATH}" "${IMAGE}"
+
+# [OS][DELETE] Delete explicitly approved test image (destructive)
+openstack image delete "${IMAGE}"
+
+
+############################################################
+# 11. KEYSTONE IDENTITY, ACCESS AND RBAC
+############################################################
+# Never put passwords in command arguments or shell history. Prefer clouds.yaml configured through an approved secret store and system-scoped audit roles where supported by deployment policy.
+
+# [OS][RO] List users
+openstack user list
+
+# [OS][RO] Inspect user and disabled state
+openstack user show "${USER_ID}"
+
+# [OS][RO] List projects
+openstack project list
+
+# [OS][RO] Inspect project
+openstack project show "${PROJECT_ID}"
+
+# [OS][RO] List domains
+openstack domain list
+
+# [OS][RO] List groups
+openstack group list
+
+# [OS][RO] List role definitions
+openstack role list
+
+# [OS][RO] Inspect effective role grants with names
+openstack role assignment list --names
+
+# [OS][RO] Inspect system scoped administrative role assignments
+openstack role assignment list --names --system all
+
+# [OS][RO] Inspect grants on project
+openstack role assignment list --names --project "${PROJECT_ID}"
+
+# [OS][RO] List service catalog
+openstack catalog list
+
+# [OS][RO] List service registrations
+openstack service list
+
+# [OS][RO] List registered endpoints
+openstack endpoint list
+
+# [OS][RO] Inspect current token expiry WITHOUT token ID
+openstack token issue -f value -c expires
+
+# [OS][RO] Inspect application credential definitions where policy permits
+openstack application credential list
+
+# [OS][RO] Check selected project quotas
+openstack quota show "${PROJECT_ID}"
+
+# [OS][CHANGE] Create Keystone project (approved project governance required)
+openstack project create --domain "${DOMAIN}" "${PROJECT_NAME}"
+
+# [OS][CHANGE] Create role for preapproved RBAC design
+openstack role create "${ROLE_NAME}"
+
+# [OS][CHANGE] Assign approved role to project member
+openstack role add --project "${PROJECT_ID}" --user "${USER_ID}" "${ROLE_NAME}"
+
+# [OS][CHANGE] Disable compromised Keystone user with incident approval
+openstack user set --disable "${USER_ID}"
+
+# [OS][CHANGE] Enable user after investigation
+openstack user set --enable "${USER_ID}"
+
+# [OS][CHANGE] Disable project after impact review
+openstack project set --disable "${PROJECT_ID}"
+
+# [OS][CHANGE] Reenable project after resolution
+openstack project set --enable "${PROJECT_ID}"
+
+# [OS][CHANGE] Register new custom service type ONLY after authoritative service catalog ownership confirmed (may be Operator reconciled)
+openstack service create --name "${SERVICE_NAME}" --description "${SERVICE_DESCRIPTION}" "${SERVICE_TYPE}"
+
+# [OS][CHANGE] Register custom public API endpoint ONLY after checking Operator authoritative service registration
+openstack endpoint create --region "${REGION}" "${SERVICE_TYPE}" public "${SERVICE_PUBLIC_URL}"
+
+# [OS][RO] Inspect service registration command syntax
+openstack service create --help
+
+# [OS][RO] Inspect endpoint registration command syntax
+openstack endpoint create --help
+
+# [OS][UNVERIFIED] List registered optional Load Balancing API resources if Octavia deployed
+openstack loadbalancer list
+
+# [OS][UNVERIFIED] List registered optional Manila shares if Manila deployed
+openstack share list
+
+# [OS][UNVERIFIED] List registered optional Designate zones if Designate deployed
+openstack zone list
+
+# [OS][UNVERIFIED] List registered optional Barbican secrets if Barbican deployed
+openstack secret list
+
+# [OS][UNVERIFIED] List registered optional Ironic bare-metal nodes if Ironic deployed
+openstack baremetal node list
+
+# [OS][UNVERIFIED] List registered optional Heat stacks if Heat deployed
+openstack stack list
+
+# [OS][RO] Discover service-specific optional client subcommands
+openstack --help | grep -E "(loadbalancer|share|zone|secret|baremetal|stack)"
+
+
+############################################################
+# 12. RABBITMQ ADMINISTRATION
+############################################################
+# RHOSO uses RabbitMQ CRs and RabbitMQ Cluster Operator. Multiple clusters may exist, including per-cell. Discover pod and its actual container; rabbitmqctl and rabbitmq-diagnostics are standard utilities confirmed in RabbitMQ images but cluster-specific paths/config must be verified at runtime.
+
+# [OCP][RO] List RHOSO RabbitMQ CR status
+oc get rabbitmq -A --show-labels
+
+# [OCP][RO] Inspect selected RabbitMQ CR readiness
+oc describe rabbitmq -n "${NS}" "${RABBIT_CR}"
+
+# [OCP][RO] Find RabbitMQ-related pods and cluster labeling
+oc get pods -n "${NS}" -l app.kubernetes.io/name=rabbitmq -o wide --show-labels
+
+# [OCP][RO] Discover containers in selected RabbitMQ pod
+oc get pod -n "${NS}" "${RABBIT_POD}" -o 'jsonpath={.spec.containers[*].name}{"\n"}'
+
+# [OCP][RO] Read RabbitMQ node cluster membership
+oc exec -n "${NS}" "${RABBIT_POD}" -c "${RABBIT_CONTAINER}" -- rabbitmqctl cluster_status
+
+# [OCP][RO] Read RabbitMQ node diagnostics
+oc exec -n "${NS}" "${RABBIT_POD}" -c "${RABBIT_CONTAINER}" -- rabbitmq-diagnostics status
+
+# [OCP][RO] Inspect RabbitMQ node listeners
+oc exec -n "${NS}" "${RABBIT_POD}" -c "${RABBIT_CONTAINER}" -- rabbitmq-diagnostics listeners
+
+# [OCP][RO] List RabbitMQ queues
+oc exec -n "${NS}" "${RABBIT_POD}" -c "${RABBIT_CONTAINER}" -- rabbitmqctl list_queues
+
+# [OCP][RO] Show per-queue depth/consumers/memory
+oc exec -n "${NS}" "${RABBIT_POD}" -c "${RABBIT_CONTAINER}" -- rabbitmqctl list_queues name messages_ready messages_unacknowledged consumers memory
+
+# [OCP][UNVERIFIED] Show quorum queue leader and members (requires installed RabbitMQ version with supported fields)
+oc exec -n "${NS}" "${RABBIT_POD}" -c "${RABBIT_CONTAINER}" -- rabbitmqctl list_queues name type leader members online
+
+# [OCP][RO] List established message broker connections
+oc exec -n "${NS}" "${RABBIT_POD}" -c "${RABBIT_CONTAINER}" -- rabbitmqctl list_connections
+
+# [OCP][RO] Inspect open RabbitMQ channels
+oc exec -n "${NS}" "${RABBIT_POD}" -c "${RABBIT_CONTAINER}" -- rabbitmqctl list_channels
+
+# [OCP][RO] Inspect RabbitMQ consumers
+oc exec -n "${NS}" "${RABBIT_POD}" -c "${RABBIT_CONTAINER}" -- rabbitmqctl list_consumers
+
+# [OCP][RO] Inspect alarm states
+oc exec -n "${NS}" "${RABBIT_POD}" -c "${RABBIT_CONTAINER}" -- rabbitmq-diagnostics alarms
+
+# [OCP][RO] Inspect running RabbitMQ endpoints
+oc get svc,endpointslices -n "${NS}" -l app.kubernetes.io/name=rabbitmq
+
+# [OCP][RO] Inspect RabbitMQ pod logs
+oc logs -n "${NS}" "${RABBIT_POD}" -c "${RABBIT_CONTAINER}" --since=1h
+
+# [OCP][RO] List RabbitMQ operator metadata
+oc get deployments -n "${OPERATORS_NS}" | grep -i rabbit
+
+# [OCP][RO] Inspect RabbitMQ users CRs if installed
+oc get rabbitmquser -n "${NS}"
+
+
+############################################################
+# 13. GALERA DATABASE ADMINISTRATION
+############################################################
+# Galera root account is managed by MariaDBAccount CR; Galera .status.rootDatabaseSecret identifies secret. Never dump secret or use mysql -pPASSWORD. Connect interactively with mysql -u root -p and obtain password using separately approved vault method. For unattended checks prefer Operator CR readiness when privileged SQL is unavailable.
+
+# [OCP][RO] List all Galera CRs and topology
+oc get galera -A
+
+# [OCP][RO] List MariaDBAccount CRs
+oc get mariadbaccounts -A
+
+# [OCP][RO] Inspect Galera reconciliation conditions
+oc describe galera -n "${NS}" "${GALERA_CR}"
+
+# [OCP][RO] Discover root database credential SECRET NAME only
+oc get galera -n "${NS}" "${GALERA_CR}" -o 'jsonpath={.status.rootDatabaseSecret}{"\n"}'
+
+# [OCP][RO] Find Galera pods across service-specific cells
+oc get pods -n "${NS}" -o wide | grep -i galera
+
+# [OCP][RO] List containers in selected Galera pod
+oc get pod -n "${NS}" "${GALERA_POD}" -o 'jsonpath={.spec.containers[*].name}{"\n"}'
+
+# [OCP][RO] Connect interactively as DBA (password prompted, not CLI/history; must be authorized)
+oc rsh -n "${NS}" -c "${GALERA_CONTAINER}" "${GALERA_POD}" mysql -u root -p
+
+# [OCP][RO] Read wsrep cluster membership; interactive password prompt
+oc rsh -n "${NS}" -c "${GALERA_CONTAINER}" "${GALERA_POD}" mysql -u root -p -e "SHOW GLOBAL STATUS LIKE 'wsrep_cluster_size';"
+
+# [OCP][RO] Read Galera primary component status
+oc rsh -n "${NS}" -c "${GALERA_CONTAINER}" "${GALERA_POD}" mysql -u root -p -e "SHOW GLOBAL STATUS LIKE 'wsrep_cluster_status';"
+
+# [OCP][RO] Read local sync state
+oc rsh -n "${NS}" -c "${GALERA_CONTAINER}" "${GALERA_POD}" mysql -u root -p -e "SHOW GLOBAL STATUS LIKE 'wsrep_local_state_comment';"
+
+# [OCP][RO] Check node readiness to accept writes
+oc rsh -n "${NS}" -c "${GALERA_CONTAINER}" "${GALERA_POD}" mysql -u root -p -e "SHOW GLOBAL STATUS LIKE 'wsrep_ready';"
+
+# [OCP][RO] Read Galera replication connectivity
+oc rsh -n "${NS}" -c "${GALERA_CONTAINER}" "${GALERA_POD}" mysql -u root -p -e "SHOW GLOBAL STATUS LIKE 'wsrep_connected';"
+
+# [OCP][RO] Inspect current database process list (may contain query data)
+oc rsh -n "${NS}" -c "${GALERA_CONTAINER}" "${GALERA_POD}" mysql -u root -p -e "SHOW PROCESSLIST;"
+
+# [OCP][RO] Inspect DB connections and maximum capacity
+oc rsh -n "${NS}" -c "${GALERA_CONTAINER}" "${GALERA_POD}" mysql -u root -p -e "SHOW GLOBAL STATUS LIKE 'Threads_connected'; SHOW GLOBAL VARIABLES LIKE 'max_connections';"
+
+# [OCP][RO] List database schemas
+oc rsh -n "${NS}" -c "${GALERA_CONTAINER}" "${GALERA_POD}" mysql -u root -p -e "SHOW DATABASES;"
+
+# [OCP][RO] Inspect logical database disk utilization from schema table
+oc rsh -n "${NS}" -c "${GALERA_CONTAINER}" "${GALERA_POD}" mysql -u root -p -e "SELECT table_schema,ROUND(SUM(data_length+index_length)/1024/1024,1) AS MiB FROM information_schema.tables GROUP BY table_schema;"
+
+# [OCP][RO] Inspect Galera cluster logs
+oc logs -n "${NS}" "${GALERA_POD}" -c "${GALERA_CONTAINER}" --since=1h
+
+# [OCP][RO] Inspect Galera PVC volume attachment and storage
+oc get pvc -n "${NS}" -o wide | grep -i galera
+
+# [OCP][RO] Inspect database backup-related scheduled jobs; backup implementation is site dependent
+oc get cronjobs,jobs -n "${NS}" | grep -Ei "backup|maria|galera"
+
+
+############################################################
+# 14. HIGH AVAILABILITY ADMINISTRATION
+############################################################
+# Inspect both desired replicas AND ready endpoints; HA is proven only by controlled failure-domain tests under an approved plan. No disruptive failover tests are embedded here.
+
+# [OCP][RO] Inspect deployed control plane replicas
+oc get deploy,sts -n "${NS}" -o wide
+
+# [OCP][RO] Inspect pod distribution by nodes
+oc get pods -n "${NS}" -o wide
+
+# [OCP][RO] Inspect service anti-affinity and spreading
+oc get statefulset -n "${NS}" "${STATEFULSET}" -o json | jq '.spec.template.spec | {affinity,topologySpreadConstraints}'
+
+# [OCP][RO] Inspect configured disruption budgets
+oc get pdb -n "${NS}" -o wide
+
+# [OCP][RO] Inspect RabbitMQ replicas and readiness
+oc get rabbitmq -n "${NS}" --show-labels
+
+# [OCP][RO] Inspect Galera replicas and readiness
+oc get galera -n "${NS}" -o wide
+
+# [OCP][RO] Inspect OVN NB/SB member pods and placement
+oc get pods -n "${NS}" -o wide | grep -E "ovsdbserver-(nb|sb)"
+
+# [OCP][RO] Inspect OVN gateways through Chassis and Port_Binding
+oc exec -n "${NS}" "${OVN_SB_POD}" -c "${OVN_SB_CONTAINER}" -- ovn-sbctl list Chassis
+
+# [OS][RO] Inspect Nova conductor state
+openstack compute service list --service nova-conductor
+
+# [OS][RO] Inspect Nova scheduler state
+openstack compute service list --service nova-scheduler
+
+# [OS][RO] Inspect hypervisor health
+openstack hypervisor list
+
+# [OCP][RO] Inspect API endpoint redundancy configuration
+oc get services,routes -n "${NS}" -o wide
+
+# [OCP][RO] Inspect service EndpointSlice backends
+oc get endpointslices -n "${NS}" -o wide
+
+# [OCP][RO] Inspect LoadBalancer service addresses
+oc get svc -n "${NS}" -o wide | grep LoadBalancer
+
+# [OCP][RO] Inspect storage resiliency via PVC topology
+oc get pvc,pv -n "${NS}" -o wide
+
+# [OCP][RO] Inspect node availability for anti-affinity capacity
+oc get nodes -o wide
+
+
+############################################################
+# 15. MONITORING AND OBSERVABILITY
+############################################################
+# OpenShift built-in monitoring exists but RHOSO telemetry components, Prometheus rules, Thanos, Gnocchi/Ceilometer/Aodh and exporters may be optional and version-specific.
+
+# [OCP][RO] Inspect cluster monitoring operator
+oc get co monitoring
+
+# [OCP][RO] List OpenShift monitoring pods
+oc get pods -n openshift-monitoring
+
+# [OCP][RO] Find user-workload monitoring config
+oc get configmaps -n openshift-user-workload-monitoring
+
+# [OCP][RO] Discover Prometheus resources
+oc get prometheus -A
+
+# [OCP][RO] Discover Alertmanager resources
+oc get alertmanager -A
+
+# [OCP][RO] Discover ServiceMonitors
+oc get servicemonitors -A
+
+# [OCP][RO] Discover PodMonitors
+oc get podmonitors -A
+
+# [OCP][RO] Discover PrometheusRules
+oc get prometheusrules -A
+
+# [OCP][RO] Discover ThanosRulers
+oc get thanosrulers -A
+
+# [OCP][RO] Discover RHOSO Telemetry CRDs and active operators
+oc api-resources --verbs=list | grep -Ei "telemetry|ceilometer|aodh|gnocchi|autoscal|prometheus"
+
+# [OCP][RO] List RHOSO telemetry-related pods
+oc get pods -n "${NS}" | grep -Ei "telemetry|ceilometer|aodh|gnocchi|metrics|exporter"
+
+# [OCP][RO] Inspect node CPU/memory consumption
+oc adm top nodes
+
+# [OCP][RO] Inspect per-container CPU/memory consumption
+oc adm top pods -n "${NS}" --containers
+
+# [OCP][RO] Inspect persistent volume usage/capacity
+oc get pvc -n "${NS}" -o wide
+
+# [OS][RO] Inspect hypervisor memory and CPU capacity
+openstack hypervisor stats show
+
+# [OS][RO] Inspect Placement allocation provider usage
+openstack resource provider usage show "${RESOURCE_PROVIDER_UUID}"
+
+# [OCP][RO] Inspect queue pressure and memory
+oc exec -n "${NS}" "${RABBIT_POD}" -c "${RABBIT_CONTAINER}" -- rabbitmqctl list_queues name messages_ready messages_unacknowledged memory
+
+# [OCP][RO] Inspect Galera max/current connections
+oc rsh -n "${NS}" -c "${GALERA_CONTAINER}" "${GALERA_POD}" mysql -u root -p -e "SHOW GLOBAL STATUS LIKE 'Threads_connected'; SHOW GLOBAL VARIABLES LIKE 'max_connections';"
+
+# [EDPM][RO] Inspect network throughput counters on host
+ip -s link show "${NIC}"
+
+# [EDPM][RO] Inspect compute disk I/O load
+iostat -xz 1 3
+
+# [CEPH][RO] Inspect Ceph aggregate health and storage usage
+ceph -s && ceph df
+
+# [OCP][RO] Inspect bounded namespace events
+oc get events -n "${NS}" --sort-by=.lastTimestamp
+
+# [OCP][RO] Collect UTC timestamp for incident correlation
+date -u +%Y-%m-%dT%H:%M:%SZ
+
+
+############################################################
+# 16. LOGGING, FORENSIC TROUBLESHOOTING AND MUST-GATHER
+############################################################
+# Choose the original transaction first (request-id, instance UUID, volume UUID, port UUID) and collect a UTC time window. Commands below diagnose; no root cause is asserted from symptoms alone. Replace pod/container variables using earlier discovery. For RHOSO must-gather use Red Hat-supported registry image for matching release.
+
+# [OCP][RO] Bounded pod log extraction
+oc logs -n "${NS}" "${POD}" -c "${CONTAINER}" --since-time="${START_UTC}" --timestamps
+
+# [OCP][RO] Previous crashed container logs
+oc logs -n "${NS}" "${POD}" -c "${CONTAINER}" --previous --timestamps
+
+# [OCP][RO] All-container pod logs
+oc logs -n "${NS}" "${POD}" --all-containers=true --since=1h --timestamps
+
+# [OCP][RO] Operator reconciliation errors
+oc logs -n "${OPERATORS_NS}" deployment/"${OPERATOR_DEPLOYMENT}" --since=1h --all-containers=true
+
+# [EDPM][RO] EDPM Nova Compute service logs
+sudo journalctl -u "${NOVA_COMPUTE_UNIT}" --since "${SINCE}" --until "${UNTIL}" --no-pager
+
+# [EDPM][RO] EDPM OVN controller journal
+sudo journalctl -u "${OVN_CONTROLLER_UNIT}" --since "${SINCE}" --no-pager
+
+# [EDPM][RO] EDPM libvirt daemon journal
+sudo journalctl -u virtqemud --since "${SINCE}" --no-pager
+
+# [EDPM][RO] EDPM networking logs
+sudo journalctl -u NetworkManager --since "${SINCE}" --no-pager
+
+# [EDPM][RO] EDPM kernel error messages
+sudo journalctl -k --since "${SINCE}" -p warning --no-pager
+
+# [EDPM][RO] EDPM selected guest libvirt log, if present
+sudo journalctl --since "${SINCE}" -t libvirtd --no-pager
+
+# [EDPM][RO] EDPM specific QEMU guest log (if available)
+sudo tail -n 200 "/var/log/libvirt/qemu/${LIBVIRT_DOMAIN}.log"
+
+# [OCP][RO] Nova API logs
+oc logs -n "${NS}" "${NOVA_API_POD}" --all-containers=true --since=1h
+
+# [OCP][RO] Nova scheduler logs
+oc logs -n "${NS}" "${NOVA_SCHEDULER_POD}" --all-containers=true --since=1h
+
+# [OCP][RO] Nova conductor logs
+oc logs -n "${NS}" "${NOVA_CONDUCTOR_POD}" --all-containers=true --since=1h
+
+# [OCP][RO] Neutron API logs
+oc logs -n "${NS}" "${NEUTRON_API_POD}" --all-containers=true --since=1h
+
+# [OCP][RO] Cinder API logs
+oc logs -n "${NS}" "${CINDER_API_POD}" --all-containers=true --since=1h
+
+# [OCP][RO] Cinder Scheduler logs
+oc logs -n "${NS}" "${CINDER_SCHEDULER_POD}" --all-containers=true --since=1h
+
+# [OCP][RO] Cinder Volume logs (where pod-based)
+oc logs -n "${NS}" "${CINDER_VOLUME_POD}" --all-containers=true --since=1h
+
+# [OCP][RO] Glance API logs
+oc logs -n "${NS}" "${GLANCE_API_POD}" --all-containers=true --since=1h
+
+# [OCP][RO] Keystone API logs
+oc logs -n "${NS}" "${KEYSTONE_API_POD}" --all-containers=true --since=1h
+
+# [OCP][RO] OVN DB logs
+oc logs -n "${NS}" "${OVN_NB_POD}" --all-containers=true --since=1h
+
+# [OCP][RO] RabbitMQ logs
+oc logs -n "${NS}" "${RABBIT_POD}" -c "${RABBIT_CONTAINER}" --since=1h
+
+# [OCP][RO] Galera logs
+oc logs -n "${NS}" "${GALERA_POD}" -c "${GALERA_CONTAINER}" --since=1h
+
+# [OCP][RO] Ansible jobs and status for failed EDPM deployment
+oc get jobs,pods -n "${NS}" -l "openstackdataplanedeployment=${DP_DEPLOYMENT}"
+
+# [OCP][RO] Correlate request ID in Nova API service logs
+oc logs -n "${NS}" "${NOVA_API_POD}" --since=2h --all-containers=true | grep -F "${REQUEST_ID}"
+
+# [OCP][RO] Correlate request ID in scheduler logs
+oc logs -n "${NS}" "${NOVA_SCHEDULER_POD}" --since=2h --all-containers=true | grep -F "${REQUEST_ID}"
+
+# [OCP][RO] Collect default OCP must-gather to local directory; large read-only capture
+oc adm must-gather --dest-dir="${MUST_GATHER_DIR}"
+
+# [OCP][RO] Collect supported RHOSO-specific must-gather; confirm image version and scope first
+oc adm must-gather --image=registry.redhat.io/rhoso-operators/openstack-must-gather-rhel9:1.0 --dest-dir="${RHOSO_GATHER_DIR}"
+
+# [OCP][RO] INCIDENT 01 VM stuck BUILD: transaction = Nova create -> scheduler -> conductor -> compute -> Neutron/Glance/Placement. FIRST PROVEN FAILURE BOUNDARY is the first response/log mismatch; no RCA is preasserted.
+printf "%s\n" "INCIDENT 01: VM stuck BUILD | compare request UUID + UTC time across hops"
+
+# [OS][RO] INCIDENT 01 initial verification
+openstack server show "${VM}" -c status -c fault -c OS-EXT-SRV-ATTR:host
+
+# [OCP][RO] INCIDENT 01 relevant logs or fault-domain state
+oc logs -n "${NS}" "${NOVA_SCHEDULER_POD}" --since=1h --all-containers=true | grep -F "${REQUEST_ID}"
+
+# [OS][RO] INCIDENT 01 conditional deeper boundary inspection
+openstack server migration list --server "${VM}"
+
+# [OCP][RO] INCIDENT 02 VM ERROR: transaction = Nova create/resize -> worker returned fault. FIRST PROVEN FAILURE BOUNDARY is the first response/log mismatch; no RCA is preasserted.
+printf "%s\n" "INCIDENT 02: VM ERROR | compare request UUID + UTC time across hops"
+
+# [OS][RO] INCIDENT 02 initial verification
+openstack server show "${VM}" -f yaml
+
+# [OCP][RO] INCIDENT 02 relevant logs or fault-domain state
+oc logs -n "${NS}" "${NOVA_API_POD}" --since=1h --all-containers=true | grep -F "${REQUEST_ID}"
+
+# [OS][RO] INCIDENT 02 conditional deeper boundary inspection
+openstack port list --server "${VM}"
+
+# [OCP][RO] INCIDENT 03 NoValidHost: transaction = scheduler allocation candidates -> Placement inventories and traits. FIRST PROVEN FAILURE BOUNDARY is the first response/log mismatch; no RCA is preasserted.
+printf "%s\n" "INCIDENT 03: NoValidHost | compare request UUID + UTC time across hops"
+
+# [OS][RO] INCIDENT 03 initial verification
+openstack hypervisor stats show
+
+# [OCP][RO] INCIDENT 03 relevant logs or fault-domain state
+oc logs -n "${NS}" "${NOVA_SCHEDULER_POD}" --since=1h --all-containers=true | grep -F "${REQUEST_ID}"
+
+# [OS][RO] INCIDENT 03 conditional deeper boundary inspection
+openstack resource provider list
+
+# [OCP][RO] INCIDENT 04 Compute DOWN: transaction = nova-compute heartbeat -> RPC broker -> cell conductor. FIRST PROVEN FAILURE BOUNDARY is the first response/log mismatch; no RCA is preasserted.
+printf "%s\n" "INCIDENT 04: Compute DOWN | compare request UUID + UTC time across hops"
+
+# [OS][RO] INCIDENT 04 initial verification
+openstack compute service list --host "${COMPUTE_HOST}"
+
+# [EDPM][RO] INCIDENT 04 relevant logs or fault-domain state
+sudo journalctl -u "${NOVA_COMPUTE_UNIT}" --since "${SINCE}" --no-pager
+
+# [EDPM][RO] INCIDENT 04 conditional deeper boundary inspection
+systemctl list-units --type=service --all --no-pager
+
+# [OCP][RO] INCIDENT 05 Compute not registered: transaction = EDPM deployment -> compute service -> registration -> cell mapping. FIRST PROVEN FAILURE BOUNDARY is the first response/log mismatch; no RCA is preasserted.
+printf "%s\n" "INCIDENT 05: Compute not registered | compare request UUID + UTC time across hops"
+
+# [OS][RO] INCIDENT 05 initial verification
+openstack compute service list --host "${COMPUTE_HOST}"
+
+# [OCP][RO] INCIDENT 05 relevant logs or fault-domain state
+oc logs -n "${NS}" job/"${ANSIBLE_JOB}" --since=2h --all-containers=true
+
+# [OS][RO] INCIDENT 05 conditional deeper boundary inspection
+openstack hypervisor list
+
+# [OCP][RO] INCIDENT 06 Host missing from Nova cell: transaction = compute service register -> nova-manage cell host mapping. FIRST PROVEN FAILURE BOUNDARY is the first response/log mismatch; no RCA is preasserted.
+printf "%s\n" "INCIDENT 06: Host missing from Nova cell | compare request UUID + UTC time across hops"
+
+# [OCP][RO] INCIDENT 06 initial verification
+oc exec -n "${NS}" "${NOVA_CONDUCTOR_POD}" -c "${NOVA_CONDUCTOR_CONTAINER}" -- nova-manage cell_v2 list_hosts
+
+# [OCP][RO] INCIDENT 06 relevant logs or fault-domain state
+oc logs -n "${NS}" "${NOVA_CONDUCTOR_POD}" --since=2h --all-containers=true
+
+# [OS][RO] INCIDENT 06 conditional deeper boundary inspection
+openstack compute service list --host "${COMPUTE_HOST}"
+
+# [OCP][RO] INCIDENT 07 VM DHCP failure: transaction = Neutron subnet DHCP -> OVN NB DHCP option -> SB binding -> guest packet. FIRST PROVEN FAILURE BOUNDARY is the first response/log mismatch; no RCA is preasserted.
+printf "%s\n" "INCIDENT 07: VM DHCP failure | compare request UUID + UTC time across hops"
+
+# [OS][RO] INCIDENT 07 initial verification
+openstack port show "${PORT_ID}" -f yaml
+
+# [OCP][RO] INCIDENT 07 relevant logs or fault-domain state
+oc logs -n "${NS}" "${NEUTRON_API_POD}" --since=1h --all-containers=true
+
+# [OCP][RO] INCIDENT 07 conditional deeper boundary inspection
+oc exec -n "${NS}" "${OVN_NB_POD}" -c "${OVN_NB_CONTAINER}" -- ovn-nbctl list DHCP_Options
+
+# [OCP][RO] INCIDENT 08 VM metadata unavailable: transaction = guest 169.254.169.254 -> OVN metadata proxy -> Nova metadata API. FIRST PROVEN FAILURE BOUNDARY is the first response/log mismatch; no RCA is preasserted.
+printf "%s\n" "INCIDENT 08: VM metadata unavailable | compare request UUID + UTC time across hops"
+
+# [OS][RO] INCIDENT 08 initial verification
+openstack port show "${PORT_ID}" -f yaml
+
+# [EDPM][RO] INCIDENT 08 relevant logs or fault-domain state
+sudo podman logs --since 1h "${OVN_METADATA_CONTAINER}"
+
+# [EDPM][RO] INCIDENT 08 conditional deeper boundary inspection
+ip route get 169.254.169.254
+
+# [OCP][RO] INCIDENT 09 VM external connectivity failure: transaction = guest -> router -> OVN gateway -> provider uplink. FIRST PROVEN FAILURE BOUNDARY is the first response/log mismatch; no RCA is preasserted.
+printf "%s\n" "INCIDENT 09: VM external connectivity failure | compare request UUID + UTC time across hops"
+
+# [OS][RO] INCIDENT 09 initial verification
+openstack router show "${ROUTER}" -f yaml
+
+# [EDPM][RO] INCIDENT 09 relevant logs or fault-domain state
+sudo journalctl -u "${OVN_CONTROLLER_UNIT}" --since "${SINCE}" --no-pager
+
+# [EDPM][RO] INCIDENT 09 conditional deeper boundary inspection
+sudo ovs-vsctl show
+
+# [OCP][RO] INCIDENT 10 Floating IP unreachable: transaction = external ingress -> gateway chassis -> OVN DNAT -> guest security. FIRST PROVEN FAILURE BOUNDARY is the first response/log mismatch; no RCA is preasserted.
+printf "%s\n" "INCIDENT 10: Floating IP unreachable | compare request UUID + UTC time across hops"
+
+# [OS][RO] INCIDENT 10 initial verification
+openstack floating ip show "${FLOATING_IP_ID}" -f yaml
+
+# [EDPM][RO] INCIDENT 10 relevant logs or fault-domain state
+sudo podman logs --since 1h "${OVN_CONTROLLER_CONTAINER}"
+
+# [OCP][RO] INCIDENT 10 conditional deeper boundary inspection
+oc exec -n "${NS}" "${OVN_NB_POD}" -c "${OVN_NB_CONTAINER}" -- ovn-nbctl lr-nat-list "${OVN_ROUTER}"
+
+# [OCP][RO] INCIDENT 11 Volume stuck attaching: transaction = Nova attachment -> Cinder attachment -> backend -> libvirt device. FIRST PROVEN FAILURE BOUNDARY is the first response/log mismatch; no RCA is preasserted.
+printf "%s\n" "INCIDENT 11: Volume stuck attaching | compare request UUID + UTC time across hops"
+
+# [OS][RO] INCIDENT 11 initial verification
+openstack volume show "${VOLUME}" -f yaml
+
+# [OCP][RO] INCIDENT 11 relevant logs or fault-domain state
+oc logs -n "${NS}" "${CINDER_API_POD}" --since=1h --all-containers=true
+
+# [EDPM][RO] INCIDENT 11 conditional deeper boundary inspection
+sudo multipath -ll
+
+# [OCP][RO] INCIDENT 12 Volume stuck creating: transaction = Cinder API -> scheduler backend selection -> volume driver. FIRST PROVEN FAILURE BOUNDARY is the first response/log mismatch; no RCA is preasserted.
+printf "%s\n" "INCIDENT 12: Volume stuck creating | compare request UUID + UTC time across hops"
+
+# [OS][RO] INCIDENT 12 initial verification
+openstack volume service list --long
+
+# [OCP][RO] INCIDENT 12 relevant logs or fault-domain state
+oc logs -n "${NS}" "${CINDER_SCHEDULER_POD}" --since=1h --all-containers=true
+
+# [OS][RO] INCIDENT 12 conditional deeper boundary inspection
+openstack volume show "${VOLUME}" -f yaml
+
+# [OCP][RO] INCIDENT 13 Scheduler RPC failure: transaction = Nova API -> message bus -> scheduler. FIRST PROVEN FAILURE BOUNDARY is the first response/log mismatch; no RCA is preasserted.
+printf "%s\n" "INCIDENT 13: Scheduler RPC failure | compare request UUID + UTC time across hops"
+
+# [OS][RO] INCIDENT 13 initial verification
+openstack compute service list --service nova-scheduler
+
+# [OCP][RO] INCIDENT 13 relevant logs or fault-domain state
+oc logs -n "${NS}" "${NOVA_SCHEDULER_POD}" --since=1h --all-containers=true
+
+# [OCP][RO] INCIDENT 13 conditional deeper boundary inspection
+oc exec -n "${NS}" "${RABBIT_POD}" -c "${RABBIT_CONTAINER}" -- rabbitmqctl list_queues
+
+# [OCP][RO] INCIDENT 14 OVN chassis missing: transaction = EDPM ovn-controller -> OVS SB connection -> chassis registration. FIRST PROVEN FAILURE BOUNDARY is the first response/log mismatch; no RCA is preasserted.
+printf "%s\n" "INCIDENT 14: OVN chassis missing | compare request UUID + UTC time across hops"
+
+# [OCP][RO] INCIDENT 14 initial verification
+oc exec -n "${NS}" "${OVN_SB_POD}" -c "${OVN_SB_CONTAINER}" -- ovn-sbctl chassis-list
+
+# [EDPM][RO] INCIDENT 14 relevant logs or fault-domain state
+sudo journalctl -u "${OVN_CONTROLLER_UNIT}" --since "${SINCE}" --no-pager
+
+# [EDPM][RO] INCIDENT 14 conditional deeper boundary inspection
+sudo ovs-vsctl get Open_vSwitch . external_ids
+
+# [OCP][RO] INCIDENT 15 OVN gateway failure: transaction = gateway chassis -> provider bridge -> external L2/L3. FIRST PROVEN FAILURE BOUNDARY is the first response/log mismatch; no RCA is preasserted.
+printf "%s\n" "INCIDENT 15: OVN gateway failure | compare request UUID + UTC time across hops"
+
+# [OCP][RO] INCIDENT 15 initial verification
+oc exec -n "${NS}" "${OVN_SB_POD}" -c "${OVN_SB_CONTAINER}" -- ovn-sbctl list Port_Binding
+
+# [EDPM][RO] INCIDENT 15 relevant logs or fault-domain state
+sudo journalctl -u "${OVN_CONTROLLER_UNIT}" --since "${SINCE}" --no-pager
+
+# [EDPM][RO] INCIDENT 15 conditional deeper boundary inspection
+sudo ovs-vsctl list-br
+
+# [OCP][RO] INCIDENT 16 Neutron API unavailable: transaction = client -> route/endpoint -> Neutron API pod -> DB/RPC. FIRST PROVEN FAILURE BOUNDARY is the first response/log mismatch; no RCA is preasserted.
+printf "%s\n" "INCIDENT 16: Neutron API unavailable | compare request UUID + UTC time across hops"
+
+# [OS][RO] INCIDENT 16 initial verification
+openstack network list
+
+# [OCP][RO] INCIDENT 16 relevant logs or fault-domain state
+oc logs -n "${NS}" "${NEUTRON_API_POD}" --since=1h --all-containers=true
+
+# [OCP][RO] INCIDENT 16 conditional deeper boundary inspection
+oc get svc,endpointslices,routes -n "${NS}"
+
+# [OCP][RO] INCIDENT 17 Keystone authentication failure: transaction = client -> Keystone endpoint -> identity backend. FIRST PROVEN FAILURE BOUNDARY is the first response/log mismatch; no RCA is preasserted.
+printf "%s\n" "INCIDENT 17: Keystone authentication failure | compare request UUID + UTC time across hops"
+
+# [OS][RO] INCIDENT 17 initial verification
+openstack token issue -f value -c expires
+
+# [OCP][RO] INCIDENT 17 relevant logs or fault-domain state
+oc logs -n "${NS}" "${KEYSTONE_API_POD}" --since=1h --all-containers=true
+
+# [OS][RO] INCIDENT 17 conditional deeper boundary inspection
+openstack endpoint list --service keystone
+
+# [OCP][RO] INCIDENT 18 RabbitMQ backlog: transaction = producer -> broker queue -> consumer acknowledgments. FIRST PROVEN FAILURE BOUNDARY is the first response/log mismatch; no RCA is preasserted.
+printf "%s\n" "INCIDENT 18: RabbitMQ backlog | compare request UUID + UTC time across hops"
+
+# [OCP][RO] INCIDENT 18 initial verification
+oc exec -n "${NS}" "${RABBIT_POD}" -c "${RABBIT_CONTAINER}" -- rabbitmqctl list_queues name messages_ready messages_unacknowledged consumers
+
+# [OCP][RO] INCIDENT 18 relevant logs or fault-domain state
+oc logs -n "${NS}" "${RABBIT_POD}" -c "${RABBIT_CONTAINER}" --since=1h
+
+# [OCP][RO] INCIDENT 18 conditional deeper boundary inspection
+oc exec -n "${NS}" "${RABBIT_POD}" -c "${RABBIT_CONTAINER}" -- rabbitmqctl list_connections
+
+# [OCP][RO] INCIDENT 19 Galera unsynced: transaction = service DB access -> Galera node -> primary component. FIRST PROVEN FAILURE BOUNDARY is the first response/log mismatch; no RCA is preasserted.
+printf "%s\n" "INCIDENT 19: Galera unsynced | compare request UUID + UTC time across hops"
+
+# [OCP][RO] INCIDENT 19 initial verification
+oc get galera -n "${NS}"
+
+# [OCP][RO] INCIDENT 19 relevant logs or fault-domain state
+oc logs -n "${NS}" "${GALERA_POD}" -c "${GALERA_CONTAINER}" --since=1h
+
+# [OCP][RO] INCIDENT 19 conditional deeper boundary inspection
+oc get pods,pvc -n "${NS}" | grep -i galera
+
+# [OCP][RO] INCIDENT 20 Ceph degraded: transaction = backend client I/O -> Ceph pool/PG -> OSD quorum. FIRST PROVEN FAILURE BOUNDARY is the first response/log mismatch; no RCA is preasserted.
+printf "%s\n" "INCIDENT 20: Ceph degraded | compare request UUID + UTC time across hops"
+
+# [CEPH][RO] INCIDENT 20 initial verification
+ceph health detail
+
+# [CEPH][RO] INCIDENT 20 relevant logs or fault-domain state
+ceph -s
+
+# [CEPH][RO] INCIDENT 20 conditional deeper boundary inspection
+ceph osd perf
+
+# [OCP][RO] INCIDENT 21 EDPM deployment failure: transaction = NodeSet desired state -> Ansible EE Job -> EDPM host. FIRST PROVEN FAILURE BOUNDARY is the first response/log mismatch; no RCA is preasserted.
+printf "%s\n" "INCIDENT 21: EDPM deployment failure | compare request UUID + UTC time across hops"
+
+# [OCP][RO] INCIDENT 21 initial verification
+oc get openstackdataplanedeployment -n "${NS}" "${DP_DEPLOYMENT}" -o yaml
+
+# [OCP][RO] INCIDENT 21 relevant logs or fault-domain state
+oc logs -n "${NS}" job/"${ANSIBLE_JOB}" --since=2h --all-containers=true
+
+# [OCP][RO] INCIDENT 21 conditional deeper boundary inspection
+oc get jobs -n "${NS}" -l "openstackdataplanedeployment=${DP_DEPLOYMENT}"
+
+# [OCP][RO] INCIDENT 22 Operator reconciliation failure: transaction = source OpenStackControlPlane CR -> service Operator -> generated resources. FIRST PROVEN FAILURE BOUNDARY is the first response/log mismatch; no RCA is preasserted.
+printf "%s\n" "INCIDENT 22: Operator reconciliation failure | compare request UUID + UTC time across hops"
+
+# [OCP][RO] INCIDENT 22 initial verification
+oc get openstackcontrolplane -n "${NS}" -o yaml
+
+# [OCP][RO] INCIDENT 22 relevant logs or fault-domain state
+oc logs -n "${OPERATORS_NS}" deployment/"${OPERATOR_DEPLOYMENT}" --since=1h --all-containers=true
+
+# [OCP][RO] INCIDENT 22 conditional deeper boundary inspection
+oc get events -n "${NS}" --sort-by=.lastTimestamp
+
+# [OCP][RO] INCIDENT 23 API endpoint unavailable: transaction = client -> public/internal API endpoint -> router/service -> pod. FIRST PROVEN FAILURE BOUNDARY is the first response/log mismatch; no RCA is preasserted.
+printf "%s\n" "INCIDENT 23: API endpoint unavailable | compare request UUID + UTC time across hops"
+
+# [OS][RO] INCIDENT 23 initial verification
+openstack endpoint list
+
+# [OCP][RO] INCIDENT 23 relevant logs or fault-domain state
+oc logs -n "${NS}" "${API_POD}" --since=1h --all-containers=true
+
+# [OCP][RO] INCIDENT 23 conditional deeper boundary inspection
+oc get route,svc,endpointslices -n "${NS}"
+
+# [OCP][RO] INCIDENT 24 Insufficient compute capacity: transaction = scheduler -> Placement provider inventory/allocations -> compute host. FIRST PROVEN FAILURE BOUNDARY is the first response/log mismatch; no RCA is preasserted.
+printf "%s\n" "INCIDENT 24: Insufficient compute capacity | compare request UUID + UTC time across hops"
+
+# [OS][RO] INCIDENT 24 initial verification
+openstack hypervisor stats show
+
+# [OCP][RO] INCIDENT 24 relevant logs or fault-domain state
+oc logs -n "${NS}" "${NOVA_SCHEDULER_POD}" --since=1h --all-containers=true
+
+# [OS][RO] INCIDENT 24 conditional deeper boundary inspection
+openstack resource provider usage show "${RESOURCE_PROVIDER_UUID}"
+
+# [OCP][RO] INCIDENT 25 Live migration failure: transaction = Nova API -> source/destination nova-compute -> libvirt -> storage/network. FIRST PROVEN FAILURE BOUNDARY is the first response/log mismatch; no RCA is preasserted.
+printf "%s\n" "INCIDENT 25: Live migration failure | compare request UUID + UTC time across hops"
+
+# [OS][RO] INCIDENT 25 initial verification
+openstack server migration list --server "${VM}"
+
+# [EDPM][RO] INCIDENT 25 relevant logs or fault-domain state
+sudo journalctl -u "${NOVA_COMPUTE_UNIT}" --since "${SINCE}" --no-pager
+
+# [OS][RO] INCIDENT 25 conditional deeper boundary inspection
+openstack server migration show "${VM}" "${MIGRATION_ID}"
+
+
+############################################################
+# 17. COMPUTE MAINTENANCE AND CHANGE CONTROL
+############################################################
+# Preconditions: approved change; workload owner coordination; inspect destination Placement capacity, same cell/aggregate/AZ, CPU model, hugepages, PCI/SR-IOV and shared storage live-migration support. Quiesce workloads that cannot migrate. Operator owns EDPM state; never modify generated configuration directly. Evacuation only when source host is confirmed failed/down.
+
+# [OS][RO] Identify original compute VM workload
+openstack server list --all-projects --host "${COMPUTE_HOST}"
+
+# [OS][RO] Validate spare compute capacity before host changes
+openstack hypervisor stats show
+
+# [OS][RO] Validate scheduler and compute service health
+openstack compute service list
+
+# [OS][RO] Validate destination resource provider inventories
+openstack resource provider inventory list "${DESTINATION_RP_UUID}"
+
+# [OS][RO] Validate destination resource provider traits
+openstack resource provider trait list "${DESTINATION_RP_UUID}"
+
+# [OS][RO] Validate VM attached volumes/migration constraints
+openstack server volume list "${VM}"
+
+# [OS][RO] Inspect active migrations before drain
+openstack server migration list --server "${VM}"
+
+# [OCP][RO] Inspect compute cell mapping before maintenance
+oc exec -n "${NS}" "${NOVA_CONDUCTOR_POD}" -c "${NOVA_CONDUCTOR_CONTAINER}" -- nova-manage cell_v2 list_hosts
+
+# [OS][CHANGE] Disable scheduling on host; change impact: no NEW placements; rollback: enable; does not move guests
+openstack compute service set --disable --disable-reason "${CHANGE_ID}" "${COMPUTE_HOST}" nova-compute
+
+# [OS][RO] Validate scheduling disabled
+openstack compute service list --host "${COMPUTE_HOST}"
+
+# [OS][CHANGE] Initiate live migration of eligible VM; risk: workload blip/failure; rollback depends on migration state
+openstack --os-compute-api-version 2.30 server migrate --live-migration --host "${DESTINATION_HOST}" "${VM}"
+
+# [OS][RO] Inspect server migration state and destination
+openstack server migration list --server "${VM}"
+
+# [OS][CHANGE] Cold migrate only after allowed downtime; impact: guest outage
+openstack server migrate "${VM}"
+
+# [OS][CHANGE] Confirm cold migration after guest validation; releases previous instance placement
+openstack server migration confirm "${VM}"
+
+# [OS][CHANGE] Revert unconfirmed cold migration after documented validation failure
+openstack server migration revert "${VM}"
+
+# [OS][CHANGE] Evacuate only after fencing/confirming source host DOWN; risk: split brain without fencing
+openstack server evacuate --host "${DESTINATION_HOST}" "${VM}"
+
+# [OS][CHANGE] Re-enable scheduling after original transaction and hypervisor validation
+openstack compute service set --enable "${COMPUTE_HOST}" nova-compute
+
+# [OS][RO] Validate enabled/up after maintenance
+openstack compute service list --host "${COMPUTE_HOST}"
+
+# [OS][RO] Validate host inventory and online hypervisor
+openstack hypervisor show "${COMPUTE_HOST}"
+
+# [EDPM][RO] Inspect reboot prerequisites (storage/multipath/active libvirt domains)
+sudo virsh list --all && sudo multipath -ll
+
+# [EDPM][RO] Inspect EDPM services after approved maintenance
+sudo systemctl --failed --no-pager
+
+# [OCP][RO] Inspect OpenStackDataPlaneNodeSet desired state for replacement
+oc get openstackdataplanenodeset "${NODESET}" -n "${NS}" -o yaml
+
+# [OS][RO] Validate original VM transaction after maintenance
+openstack server show "${VM}" -c status -c addresses -c OS-EXT-SRV-ATTR:host
+
+
+############################################################
+# 18. BACKUP, RESTORE AND DISASTER RECOVERY
+############################################################
+# Red Hat documented RHOSO control plane OADP/Velero backup/restore requires RHOSO >=18.0.21 FR6, OpenShift >=4.20, OADP >=1.5 and Velero >=1.16. Earlier patch levels: do NOT apply this workflow. Control plane, PVC data, secrets, OVN DB, MariaDB, data-plane CRs, Ceph and external state have distinct consistency and recovery needs. Restore execution intentionally excluded.
+
+# [OCP][RO] Confirm cluster version prerequisite
+oc get clusterversion
+
+# [OCP][RO] Inspect deployed RHOSO Operator CSV version
+oc get csv -n "${OPERATORS_NS}"
+
+# [OCP][RO] Verify OADP operator and Velero CRDs
+oc get crd backups.velero.io restores.velero.io backupstoragelocations.velero.io
+
+# [OCP][RO] Verify RHOSO backup configuration CR introduced in supported FR
+oc get openstackbackupconfig -n "${NS}"
+
+# [OCP][RO] Inspect complete backup configuration (review secret references carefully)
+oc get openstackbackupconfig -n "${NS}" -o yaml
+
+# [OCP][RO] Inspect BackupStorageLocation availability
+oc get backupstoragelocation -n openshift-adp
+
+# [OCP][RO] Inspect OADP DataProtectionApplication
+oc get dataprotectionapplication -n openshift-adp
+
+# [OCP][RO] Inspect backup schedules
+oc get schedules.velero.io -n openshift-adp
+
+# [OCP][RO] Inventory Velero backups and phase
+oc get backups.velero.io -n openshift-adp
+# [OCP][RO] Inspect selected backup status and errors
+oc describe backup.velero.io -n openshift-adp "${BACKUP_CR}"
+
+# [OCP][RO] Inspect ongoing and completed restore resources; does not invoke restore
+oc get restores.velero.io -n openshift-adp
+
+# [OCP][RO] Inspect selected restore metadata and phase
+oc describe restore.velero.io -n openshift-adp "${RESTORE_CR}"
+
+# [OCP][RO] Check Velero version from discovered pod; do not assume fixed pod name
+oc get pods -n openshift-adp -l deploy=velero -o wide
+
+# [OCP][RO] Run Velero version inside selected Velero pod
+oc exec -n openshift-adp "${VELERO_POD}" -- /velero version
+
+# [OCP][RO] Inspect snapshot classes with Velero label
+oc get volumesnapshotclass -l velero.io/csi-volumesnapshot-class=true
+
+# [OCP][RO] List CSI snapshots
+oc get volumesnapshots.snapshot.storage.k8s.io -A
+
+# [OCP][RO] List CSI snapshot contents
+oc get volumesnapshotcontents.snapshot.storage.k8s.io
+
+# [OCP][RO] Inspect backup namespace PVCs
+oc get pvc -n "${NS}" -o wide
+
+# [OCP][RO] Inspect Velero logs for backup failures
+oc logs -n openshift-adp "${VELERO_POD}" --since=2h
+
+# [OCP][RO] Inspect database backup-related jobs (if deployed)
+oc get jobs,cronjobs -n "${NS}" | grep -Ei "backup|maria|galera"
+
+# [OCP][RO] Inspect current OpenStack CR definitions for configuration backup
+oc get openstackcontrolplane,openstackdataplanenodeset,openstackdataplanedeployment -n "${NS}" -o yaml
+
+# [OCP][CHANGE] Export control plane CR with workstation-protected file; data may include sensitive references
+oc get openstackcontrolplane -n "${NS}" -o yaml > "${PROTECTED_BACKUP_DIR}/controlplane.yaml"
+
+# [OCP][CHANGE] Export data plane NodeSets with workstation-protected file
+oc get openstackdataplanenodeset -n "${NS}" -o yaml > "${PROTECTED_BACKUP_DIR}/edpm-nodesets.yaml"
+
+# [OCP][RO] Inspect cluster storage classes for recovery preflight
+oc get storageclass -o wide
+
+# [OCP][RO] Inspect target cluster NADs and MetalLB dependencies before any restore
+oc get network-attachment-definition -A && oc get ipaddresspools.metallb.io -A
+
+
+############################################################
+# 19. END-TO-END TEST VM PROVISIONING
+############################################################
+# APPROVED TEST ONLY. PRECONDITIONS: owner authorizes billable resources and provider IP/VLAN, physical bridge mapping, CIDR disjointness, DNS, SSH source CIDR, project quotas, cloud image URL + expected SHA256. Use separate OpenStackClient FS for file upload; do not assume OCP workstation file exists in pod. Commands here are individual [CHANGE]/[DELETE] steps, NOT auto-run. By default REUSE existing external network; provider creation is optional and must be skipped if it exists.
+
+# [OCP][RO] Discover control plane and OpenStackClient pod
+oc get openstackcontrolplane -A && oc get pods -n "${NS}" | grep -i openstackclient
+
+# [OCP][RO] Open authenticated OpenStackClient session
+oc rsh -n "${NS}" "${OS_CLIENT_POD}"
+
+# [OS][RO] Verify Keystone token without printing token
+openstack token issue -f value -c expires
+
+# [OS][RO] Verify service catalog
+openstack service list && openstack endpoint list
+
+# [OS][RO] Verify Nova host and service health
+openstack hypervisor list && openstack compute service list
+
+# [OCP][RO] Verify Nova cell mappings from discovered conductor
+oc exec -n "${NS}" "${NOVA_CONDUCTOR_POD}" -c "${NOVA_CONDUCTOR_CONTAINER}" -- nova-manage cell_v2 list_hosts
+
+# [OS][RO] Verify Neutron API/agents
+openstack network list && openstack network agent list
+
+# [OS][CHANGE] Set test variables to actual approved values; example only, never execute unchanged
+export EXTERNAL_NETWORK_NAME="<approved-external-network>" EXTERNAL_SUBNET_NAME="<external-subnet>" EXTERNAL_NETWORK_CIDR="<approved-external-cidr>" EXTERNAL_GATEWAY="<gateway-ip>" EXTERNAL_POOL_START="<first-usable-ip>" EXTERNAL_POOL_END="<last-usable-ip>" DNS_SERVER="<dns-ip>" PHYSNET="<mapped-physnet>"
+
+# [OS][CHANGE] Define tenant/test names and approved host/cidr values
+export TENANT_NETWORK_NAME="<tenant-network>" TENANT_SUBNET_NAME="<tenant-subnet>" PRIVATE_NETWORK_CIDR="<tenant-cidr>" ROUTER_NAME="<router>" SECURITY_GROUP="<sg>" AUTHORIZED_SOURCE_CIDR="<approved-source-cidr>" IMAGE_NAME="<image-name>" VM="<vm-name>" FLAVOR="<flavor-name>" KEYPAIR="<keypair-name>"
+
+# [OS][CHANGE] Define approved sizing and guest login values before provisioning (no guessed production sizes)
+export VCPU_COUNT="<approved-vcpu-count>" RAM_MIB="<approved-ram-mib>" DISK_GIB="<approved-root-disk-gib>" GUEST_USER="<published-image-login-user>"
+
+# [OS][CHANGE] Define optional Cinder test volume information; skip Cinder section if no approved backend
+export VOLUME_SIZE_GIB="<approved-size-gib>" VOLUME_TYPE="<approved-volume-type>" VOLUME_NAME="<test-volume-name>"
+
+# [OS][RO] Validate no variable placeholder or blank remains before ANY change
+( for v in EXTERNAL_NETWORK_NAME EXTERNAL_SUBNET_NAME EXTERNAL_NETWORK_CIDR EXTERNAL_GATEWAY EXTERNAL_POOL_START EXTERNAL_POOL_END DNS_SERVER PRIVATE_NETWORK_CIDR AUTHORIZED_SOURCE_CIDR PHYSNET TENANT_NETWORK_NAME TENANT_SUBNET_NAME ROUTER_NAME SECURITY_GROUP VM FLAVOR KEYPAIR IMAGE_NAME VCPU_COUNT RAM_MIB DISK_GIB GUEST_USER; do x="${!v-}"; [[ -n "$x" && "$x" != *"<"* && "$x" != *">"* ]] || { printf "BLOCKED: invalid/placeholder variable: %s\n" "$v" >&2; exit 1; }; done; echo "PREFLIGHT PASS: required variables populated; verify CIDR, gateway, physical mappings, quotas and ownership independently" )
+
+# [OS][RO] Validate proposed CIDRs/pool/gateway and reject overlaps and invalid sizing (Python available in OpenStackClient image; no changes)
+python3 - <<'PY_RHOSO_PREFLIGHT'
+import ipaddress, os, sys
+try:
+    external = ipaddress.ip_network(os.environ['EXTERNAL_NETWORK_CIDR'], strict=False)
+    private = ipaddress.ip_network(os.environ['PRIVATE_NETWORK_CIDR'], strict=False)
+    source = ipaddress.ip_network(os.environ['AUTHORIZED_SOURCE_CIDR'], strict=False)
+    gateway = ipaddress.ip_address(os.environ['EXTERNAL_GATEWAY'])
+    pool_first = ipaddress.ip_address(os.environ['EXTERNAL_POOL_START'])
+    pool_last = ipaddress.ip_address(os.environ['EXTERNAL_POOL_END'])
+    dns = ipaddress.ip_address(os.environ['DNS_SERVER'])
+    assert all(a.version == external.version for a in (gateway, pool_first, pool_last)), 'address family mismatch'
+    assert all(a in external for a in (gateway, pool_first, pool_last)), 'gateway/pool outside provider CIDR'
+    assert int(pool_first) <= int(pool_last), 'invalid pool range'
+    assert not any(a in (pool_first, pool_last) for a in [gateway]), 'gateway overlaps pool boundary; inspect entire pool'
+    assert not external.overlaps(private), 'provider and tenant CIDRs overlap'
+    assert all(int(os.environ[v]) > 0 for v in ('VCPU_COUNT', 'RAM_MIB', 'DISK_GIB')), 'nonpositive flavor sizing'
+    print('PREFLIGHT PASS: CIDR syntax, ranges, overlap and positive size; still validate actual gateway, DNS reachability and physnet')
+except (KeyError, ValueError, AssertionError) as exc:
+    print(f'BLOCKED: preflight: {exc}', file=sys.stderr)
+    raise SystemExit(1)
+PY_RHOSO_PREFLIGHT
+
+# [OS][RO] Check whether requested external network already exists
+openstack network show "${EXTERNAL_NETWORK_NAME}" -f yaml
+
+# [OS][CHANGE] Optionally CREATE flat provider external network only if none exists and physical L2 configured
+openstack network create --external --provider-network-type flat --provider-physical-network "${PHYSNET}" "${EXTERNAL_NETWORK_NAME}"
+
+# [OS][CHANGE] Alternative external VLAN network ONLY if approved VLAN mapping is deployed (do NOT create both)
+openstack network create --external --provider-network-type vlan --provider-physical-network "${PHYSNET}" --provider-segment "${VLAN_ID}" "${EXTERNAL_NETWORK_NAME}"
+
+# [OS][CHANGE] Optionally create subnet only on newly created external network
+openstack subnet create --network "${EXTERNAL_NETWORK_NAME}" --subnet-range "${EXTERNAL_NETWORK_CIDR}" --gateway "${EXTERNAL_GATEWAY}" --allocation-pool "start=${EXTERNAL_POOL_START},end=${EXTERNAL_POOL_END}" --no-dhcp "${EXTERNAL_SUBNET_NAME}"
+
+# [OS][CHANGE] Create tenant network in chosen project
+openstack network create "${TENANT_NETWORK_NAME}"
+
+# [OS][CHANGE] Create tenant DHCP subnet
+openstack subnet create --network "${TENANT_NETWORK_NAME}" --subnet-range "${PRIVATE_NETWORK_CIDR}" --dns-nameserver "${DNS_SERVER}" "${TENANT_SUBNET_NAME}"
+
+# [OS][CHANGE] Create router
+openstack router create "${ROUTER_NAME}"
+
+# [OS][CHANGE] Add tenant subnet to router
+openstack router add subnet "${ROUTER_NAME}" "${TENANT_SUBNET_NAME}"
+
+# [OS][CHANGE] Bind approved external network gateway
+openstack router set --external-gateway "${EXTERNAL_NETWORK_NAME}" "${ROUTER_NAME}"
+
+# [OS][CHANGE] Create dedicated security group
+openstack security group create "${SECURITY_GROUP}"
+
+# [OS][CHANGE] Allow ICMP from authorized test location
+openstack security group rule create --ingress --protocol icmp --remote-ip "${AUTHORIZED_SOURCE_CIDR}" "${SECURITY_GROUP}"
+
+# [OS][CHANGE] Allow SSH only from approved source
+openstack security group rule create --ingress --protocol tcp --dst-port 22 --remote-ip "${AUTHORIZED_SOURCE_CIDR}" "${SECURITY_GROUP}"
+
+# [OCP][CHANGE] Set secure workstation-private key location to approved absolute path before ssh-keygen
+export PRIVATE_KEY_PATH="<absolute-workstation-private-key-path>"
+
+# [OCP][CHANGE] Create SSH key on SECURE workstation, not from a production shared shell
+ssh-keygen -t ed25519 -a 64 -f "${PRIVATE_KEY_PATH}" -C "${KEYPAIR}"
+
+# [OCP][CHANGE] Restrict private-key file permissions
+chmod 600 "${PRIVATE_KEY_PATH}"
+
+# [OCP][RO] Verify OpenStackClient actual namespace/pod/container before staging ONLY public key
+oc get pod -n "${NS}" "${OS_CLIENT_POD}" -o 'jsonpath={.spec.containers[*].name}{"\n"}'
+
+# [OCP][CHANGE] Copy only public key into ephemeral OpenStackClient container (NOT private key)
+oc cp "${PRIVATE_KEY_PATH}.pub" "${NS}/${OS_CLIENT_POD}:/tmp/${KEYPAIR}.pub" -c "${OS_CLIENT_CONTAINER}"
+
+# [OS][CHANGE] Set staged public key path in selected OpenStackClient shell
+export PUBLIC_KEY_PATH="/tmp/${KEYPAIR}.pub"
+
+# [OS][CHANGE] Import staged public key after confirming project identity
+openstack keypair create --public-key "${PUBLIC_KEY_PATH}" "${KEYPAIR}"
+
+# [OS][CHANGE] Create test flavor with approved CPU/RAM/disk sizing variables
+openstack flavor create --vcpus "${VCPU_COUNT}" --ram "${RAM_MIB}" --disk "${DISK_GIB}" "${FLAVOR}"
+
+# [OCP][CHANGE] Define approved image source and vendor SHA256 from trusted publisher
+export IMAGE_URL="<trusted-image-url>" IMAGE_SHA256="<publisher-sha256>" IMAGE_FILE="<local-qcow2-path>"
+
+# [OCP][CHANGE] Download authorized image from vendor; TLS verification enabled
+curl --fail --location --show-error --output "${IMAGE_FILE}" "${IMAGE_URL}"
+
+# [OCP][RO] Verify image SHA256 against independent published digest
+printf "%s  %s\n" "${IMAGE_SHA256}" "${IMAGE_FILE}" | sha256sum -c -
+
+# [OCP][RO] Inspect image file type and qcow2 metadata
+file "${IMAGE_FILE}" && qemu-img info "${IMAGE_FILE}"
+
+# [OCP][RO] Derive deterministic image staging basename
+IMAGE_BASENAME=$(basename -- "${IMAGE_FILE}")
+
+# [OCP][CHANGE] Securely stage tested image in OpenStackClient pod; this writes only to pod filesystem
+oc cp "${IMAGE_FILE}" "${NS}/${OS_CLIENT_POD}:/tmp/${IMAGE_BASENAME}" -c "${OS_CLIENT_CONTAINER}"
+
+# [OS][CHANGE] Upload staged image to Glance from OpenStackClient
+openstack image create --private --disk-format qcow2 --container-format bare --file "/tmp/${IMAGE_BASENAME}" "${IMAGE_NAME}"
+
+# [OS][RO] Verify Glance image ACTIVE and properties
+openstack image show "${IMAGE_NAME}" -f yaml
+
+# [OS][CHANGE] Boot VM with managed tenant network and approved security group
+openstack server create --image "${IMAGE_NAME}" --flavor "${FLAVOR}" --network "${TENANT_NETWORK_NAME}" --security-group "${SECURITY_GROUP}" --key-name "${KEYPAIR}" "${VM}"
+
+# [OS][RO] Poll Nova server API for ACTIVE/ERROR for up to 600 seconds; not proof that cloud-init or SSH is ready
+for i in {1..60}; do VM_STATE=$(openstack server show "${VM}" -f value -c status) || break; [[ "$VM_STATE" == ACTIVE || "$VM_STATE" == ERROR ]] && break; sleep 10; done; printf "VM state: %s\n" "$VM_STATE"
+
+# [OS][RO] Require Nova ACTIVE before any floating-IP or attachment changes; investigate ERROR rather than forcing state
+[[ "${VM_STATE}" == ACTIVE ]] || { printf "BLOCKED: VM state=%s, inspect Nova and console logs\n" "${VM_STATE}" >&2; false; }
+
+# [OS][RO] Verify instance status and selected compute host
+openstack server show "${VM}" -f yaml
+
+# [OS][RO] Inspect VM binding port
+openstack port list --server "${VM}"
+
+# [OS][RO] Verify DHCP-enabled subnet and DNS
+openstack subnet show "${TENANT_SUBNET_NAME}" -f yaml
+
+# [OS][RO] Read guest console output for boot/cloud-init failures
+openstack console log show "${VM}"
+
+# [OS][CHANGE] Allocate floating IP from approved provider pool; capture result rather than guessing address
+FLOATING_IP_ADDRESS=$(openstack floating ip create "${EXTERNAL_NETWORK_NAME}" -f value -c floating_ip_address)
+
+# [OS][RO] Verify floating IP was allocated successfully before association
+[[ -n "${FLOATING_IP_ADDRESS}" ]] && openstack floating ip show "${FLOATING_IP_ADDRESS}" -f yaml
+
+# [OS][CHANGE] Associate the allocated IP with the test VM
+openstack server add floating ip "${VM}" "${FLOATING_IP_ADDRESS}"
+
+# [OS][RO] Check VM FIP mapping
+openstack floating ip show "${FLOATING_IP_ADDRESS}" -f yaml
+
+# [OCP][RO] Test ICMP from approved external source
+ping -c 4 -W 2 "${FLOATING_IP_ADDRESS}"
+
+# [OCP][RO] Test SSH from authorized location; known_hosts validation must not be bypassed
+ssh -i "${PRIVATE_KEY_PATH}" "${GUEST_USER}@${FLOATING_IP_ADDRESS}" true
+
+# [OS][RO] Inspect Nova, Neutron and OVN mapping
+openstack server show "${VM}" -c status -c addresses -c OS-EXT-SRV-ATTR:host && openstack port list --server "${VM}"
+
+# [OCP][RO] Verify actual logical switches after selecting matching NB pod
+oc exec -n "${NS}" "${OVN_NB_POD}" -c "${OVN_NB_CONTAINER}" -- ovn-nbctl show
+
+# [OCP][RO] Verify actual port binding after selecting matching SB pod
+oc exec -n "${NS}" "${OVN_SB_POD}" -c "${OVN_SB_CONTAINER}" -- ovn-sbctl list Port_Binding
+
+# [EDPM][RO] Check provider bridge and datapath path on actual gateway EDPM node
+sudo ovs-vsctl show
+
+# [OS][CHANGE] Optional create block volume of approved type and size
+openstack volume create --size "${VOLUME_SIZE_GIB}" --type "${VOLUME_TYPE}" "${VOLUME_NAME}"
+
+# [OS][CHANGE] Optional attach volume when available
+openstack server add volume "${VM}" "${VOLUME_NAME}"
+
+# [OS][RO] Optional verify volume attachment from both services
+openstack server volume list "${VM}" && openstack volume show "${VOLUME_NAME}"
+
+# [OS][DELETE] CLEANUP: detach optional volume after guest filesystem unmount
+openstack server remove volume "${VM}" "${VOLUME_NAME}"
+
+# [OS][DELETE] CLEANUP: delete test instance after workload owner approval
+openstack server delete "${VM}"
+
+# [OS][DELETE] CLEANUP: release floating IP after VM association removed
+openstack floating ip delete "${FLOATING_IP_ADDRESS}"
+
+# [OS][DELETE] CLEANUP: delete optional test volume after verified detached
+openstack volume delete "${VOLUME_NAME}"
+
+# [OS][DELETE] CLEANUP: delete router subnet interface before router
+openstack router remove subnet "${ROUTER_NAME}" "${TENANT_SUBNET_NAME}"
+
+# [OS][CHANGE] CLEANUP: detach external router gateway (required before removing router)
+openstack router unset --external-gateway "${ROUTER_NAME}"
+
+# [OS][DELETE] CLEANUP: delete test router
+openstack router delete "${ROUTER_NAME}"
+
+# [OS][DELETE] CLEANUP: remove tenant subnet
+openstack subnet delete "${TENANT_SUBNET_NAME}"
+
+# [OS][DELETE] CLEANUP: remove tenant network
+openstack network delete "${TENANT_NETWORK_NAME}"
+
+# [OS][DELETE] CLEANUP: remove dedicated security group
+openstack security group delete "${SECURITY_GROUP}"
+
+# [OS][DELETE] CLEANUP: remove public key record (not local private key)
+openstack keypair delete "${KEYPAIR}"
+
+# [OS][DELETE] CLEANUP: remove test image only when no consumers remain
+openstack image delete "${IMAGE_NAME}"
+
+# [OS][DELETE] CLEANUP: remove test flavor after instance deletion
+openstack flavor delete "${FLAVOR}"
+
+# [OS][DELETE] CLEANUP: do not delete shared/preexisting external network; if created solely for lab, delete subnet then network after verifying no consumers
+openstack subnet delete "${EXTERNAL_SUBNET_NAME}" && openstack network delete "${EXTERNAL_NETWORK_NAME}"
+
+
+############################################################
+# 20. DAILY RHOSO OPERATIONAL HEALTH CHECK
+############################################################
+# Executable script is delivered separately as rhoso-healthcheck.sh. This section is its invocation and verification; all script infrastructure calls are read-only. The script intentionally reports unavailable checks distinctly.
+
+# [OCP][RO] Validate script Bash syntax before execution
+bash -n ./rhoso-healthcheck.sh
+
+# [OCP][RO] Execute read-only RHOSO health check with namespace autoselection
+bash ./rhoso-healthcheck.sh
+
+# [OCP][RO] Select explicit control-plane namespace if more than one exists
+RHOSO_NAMESPACE="${NS}" bash ./rhoso-healthcheck.sh
+
+# [OCP][RO] Inspect status exit code 0/1/2 per script summary
+echo "$?"
+
+
+############################################################
+# 21. COMMAND INDEX AND OPERATIONAL QUICK LISTS
+############################################################
+# Command index and TOP 30/20 grouped sets are generated from the sections above. Duplicate quick-list commands are deliberate cross-reference indexes, not new command syntax.
+
+
+# CATEGORY: OpenShift
+# [OCP][INDEX] Inspect operator readiness and degradation
+# oc get clusteroperators
+# [OCP][INDEX] Inspect cluster node inventory
+# oc get nodes -o wide
+# [OCP][INDEX] Inspect all node condition transitions
+# oc get nodes -o json | jq -r '.items[] | [.metadata.name,((.status.conditions // [])|map(select(.type=="Ready"))|.[0].status),((.status.conditions // [])|map(select(.type=="Ready"))|.[0].lastTransitionTime)]|@tsv'
+# [OCP][INDEX] Inspect nodes resource pressure
+# oc adm top nodes
+# [OCP][INDEX] Inspect node labels
+# oc get nodes --show-labels
+# [OCP][INDEX] Inspect node taints
+# oc get nodes -o custom-columns=NODE:.metadata.name,TAINTS:.spec.taints
+
+# CATEGORY: Control Plane
+# [OCP][INDEX] Discover RHOSO control plane namespace(s)
+# oc get openstackcontrolplane -A
+# [OCP][INDEX] Review operator pod readiness
+# oc get pods -n "${OPERATORS_NS}" -o wide
+# [OCP][INDEX] Inspect control plane spec, status and conditions
+# oc get openstackcontrolplane "${CONTROLPLANE_NAME}" -n "${NS}" -o yaml
+# [OCP][INDEX] Read control plane readiness summary
+# oc get openstackcontrolplane -n "${NS}"
+# [OCP][INDEX] List control plane deployments
+# oc get deployments,statefulsets,daemonsets -n "${NS}" -o wide
+# [OCP][INDEX] Inspect enabled services in operator-managed source spec
+# oc get openstackcontrolplane "${CONTROLPLANE_NAME}" -n "${NS}" -o json | jq '.spec|keys'
+
+# CATEGORY: EDPM
+# [OCP][INDEX] Discover NodeSets
+# oc get openstackdataplanenodesets -A
+# [OCP][INDEX] Discover OpenStackAnsibleEE resources
+# oc get openstackansibleee -A
+# [OCP][INDEX] Inspect NodeSet configuration and host inventory
+# oc get openstackdataplanenodeset -n "${NS}" "${NODESET}" -o yaml
+# [OCP][INDEX] Find Ansible execution resources for deployment
+# oc get openstackansibleee -n "${NS}" -l "openstackdataplanedeployment=${DP_DEPLOYMENT}"
+# [EDPM][INDEX] List service unit names
+# systemctl list-units --type=service --all --no-pager
+# [EDPM][INDEX] INCIDENT 04 conditional deeper boundary inspection
+# systemctl list-units --type=service --all --no-pager
+
+# CATEGORY: Nova
+# [OS][INDEX] Discover optional service-specific command flags
+# openstack server create --help
+# [OS][INDEX] Read server API operations
+# openstack server list --limit 1
+# [OS][INDEX] List Compute service states
+# openstack compute service list
+# [OS][INDEX] Inspect compute service host in listing
+# openstack compute service list --host "${COMPUTE_HOST}"
+# [OS][INDEX] List registered hypervisors
+# openstack hypervisor list
+# [OS][INDEX] Inspect hypervisor resources
+# openstack hypervisor show "${COMPUTE_HOST}"
+
+# CATEGORY: Nova Cells
+# [OCP][INDEX] Read nova-manage cell command help from actual image
+# oc exec -n "${NS}" "${NOVA_CONDUCTOR_POD}" -c "${NOVA_CONDUCTOR_CONTAINER}" -- nova-manage cell_v2 --help
+# [OCP][INDEX] List Nova cells (contains sensitive transport/DB connection endpoints; redact before sharing)
+# oc exec -n "${NS}" "${NOVA_CONDUCTOR_POD}" -c "${NOVA_CONDUCTOR_CONTAINER}" -- nova-manage cell_v2 list_cells
+# [OCP][INDEX] List host mappings by cell
+# oc exec -n "${NS}" "${NOVA_CONDUCTOR_POD}" -c "${NOVA_CONDUCTOR_CONTAINER}" -- nova-manage cell_v2 list_hosts
+# [OCP][INDEX] INCIDENT 06 initial verification
+# oc exec -n "${NS}" "${NOVA_CONDUCTOR_POD}" -c "${NOVA_CONDUCTOR_CONTAINER}" -- nova-manage cell_v2 list_hosts
+# [OCP][INDEX] Inspect compute cell mapping before maintenance
+# oc exec -n "${NS}" "${NOVA_CONDUCTOR_POD}" -c "${NOVA_CONDUCTOR_CONTAINER}" -- nova-manage cell_v2 list_hosts
+# [OCP][INDEX] Verify Nova cell mappings from discovered conductor
+# oc exec -n "${NS}" "${NOVA_CONDUCTOR_POD}" -c "${NOVA_CONDUCTOR_CONTAINER}" -- nova-manage cell_v2 list_hosts
+
+# CATEGORY: Placement
+# [OS][INDEX] List Placement resource providers (plugin required)
+# openstack resource provider list
+# [OS][INDEX] Inspect resource provider
+# openstack resource provider show "${RESOURCE_PROVIDER_UUID}"
+# [OS][INDEX] List per-provider inventories
+# openstack resource provider inventory list "${RESOURCE_PROVIDER_UUID}"
+# [OS][INDEX] List provider current usage
+# openstack resource provider usage show "${RESOURCE_PROVIDER_UUID}"
+# [OS][INDEX] List resource provider traits
+# openstack resource provider trait list "${RESOURCE_PROVIDER_UUID}"
+# [OS][INDEX] List resource provider aggregates
+# openstack resource provider aggregate list "${RESOURCE_PROVIDER_UUID}"
+
+# CATEGORY: Neutron
+# [OS][INDEX] Read network API operations
+# openstack network list
+# [OS][INDEX] List VM associated ports
+# openstack port list --server "${VM}"
+# [OS][INDEX] Inspect network-agent state
+# openstack network agent list
+# [OS][INDEX] Inspect selected agent record
+# openstack network agent show "${AGENT_ID}"
+# [OS][INDEX] List networks and IDs
+# openstack network list --long
+# [OS][INDEX] Inspect network provider segmentation, MTU and flags
+# openstack network show "${NETWORK}" -f yaml
+
+# CATEGORY: OVN
+# [OCP][INDEX] Display northbound logical topology using validated RHOSO pod execution
+# oc exec -n "${NS}" "${OVN_NB_POD}" -c "${OVN_NB_CONTAINER}" -- ovn-nbctl show
+# [OCP][INDEX] List northbound logical switches
+# oc exec -n "${NS}" "${OVN_NB_POD}" -c "${OVN_NB_CONTAINER}" -- ovn-nbctl ls-list
+# [OCP][INDEX] List northbound logical routers
+# oc exec -n "${NS}" "${OVN_NB_POD}" -c "${OVN_NB_CONTAINER}" -- ovn-nbctl lr-list
+# [OCP][INDEX] List logical switch ports of chosen switch
+# oc exec -n "${NS}" "${OVN_NB_POD}" -c "${OVN_NB_CONTAINER}" -- ovn-nbctl lsp-list "${OVN_SWITCH}"
+# [OCP][INDEX] List logical router ports
+# oc exec -n "${NS}" "${OVN_NB_POD}" -c "${OVN_NB_CONTAINER}" -- ovn-nbctl lrp-list "${OVN_ROUTER}"
+# [OCP][INDEX] List logical router NAT rules
+# oc exec -n "${NS}" "${OVN_NB_POD}" -c "${OVN_NB_CONTAINER}" -- ovn-nbctl lr-nat-list "${OVN_ROUTER}"
+
+# CATEGORY: OVS
+# [EDPM][INDEX] Inspect LACP/bond status where OVS bond used
+# sudo ovs-appctl bond/show
+# [EDPM][INDEX] Inspect OVS topology on EDPM node
+# sudo ovs-vsctl show
+# [EDPM][INDEX] List OVS bridges
+# sudo ovs-vsctl list-br
+# [EDPM][INDEX] Inspect br-int interfaces
+# sudo ovs-vsctl list-ports br-int
+# [EDPM][INDEX] Inspect physical provider bridge ports
+# sudo ovs-vsctl list-ports "${PROVIDER_BRIDGE}"
+# [EDPM][INDEX] Inspect OVS interface details
+# sudo ovs-vsctl list Interface
+
+# CATEGORY: Cinder
+# [OS][INDEX] Read block storage API operations where enabled
+# openstack volume list
+# [OS][INDEX] List Cinder backends and enabled/down state
+# openstack volume service list --long
+# [OS][INDEX] List Cinder volumes including projects
+# openstack volume list --all-projects --long
+# [OS][INDEX] Inspect volume status and attachments
+# openstack volume show "${VOLUME}" -f yaml
+# [OS][INDEX] List volume types
+# openstack volume type list --long
+# [OS][INDEX] Inspect backend-name type mapping
+# openstack volume type show "${VOLUME_TYPE}"
+
+# CATEGORY: Glance
+# [OS][INDEX] Read image API operations
+# openstack image list
+# [OS][INDEX] List images and visibility
+# openstack image list --long
+# [OS][INDEX] Inspect image formats and checksum fields
+# openstack image show "${IMAGE}" -f yaml
+# [OS][INDEX] Inspect image sharing membership
+# openstack image member list "${IMAGE}"
+# [OS][INDEX] Inspect image import feature options
+# openstack image import --help
+# [OS][INDEX] Inspect image API capabilities
+# openstack image create --help
+
+# CATEGORY: Keystone
+# [OS][INDEX] Validate token issuance without exposing token
+# openstack token issue -f value -c expires
+# [OS][INDEX] List users
+# openstack user list
+# [OS][INDEX] Inspect user and disabled state
+# openstack user show "${USER_ID}"
+# [OS][INDEX] List role definitions
+# openstack role list
+# [OS][INDEX] Inspect effective role grants with names
+# openstack role assignment list --names
+# [OS][INDEX] Inspect system scoped administrative role assignments
+# openstack role assignment list --names --system all
+
+# CATEGORY: RabbitMQ
+# [OCP][INDEX] Read RabbitMQ node cluster membership
+# oc exec -n "${NS}" "${RABBIT_POD}" -c "${RABBIT_CONTAINER}" -- rabbitmqctl cluster_status
+# [OCP][INDEX] Read RabbitMQ node diagnostics
+# oc exec -n "${NS}" "${RABBIT_POD}" -c "${RABBIT_CONTAINER}" -- rabbitmq-diagnostics status
+# [OCP][INDEX] Inspect RabbitMQ node listeners
+# oc exec -n "${NS}" "${RABBIT_POD}" -c "${RABBIT_CONTAINER}" -- rabbitmq-diagnostics listeners
+# [OCP][INDEX] List RabbitMQ queues
+# oc exec -n "${NS}" "${RABBIT_POD}" -c "${RABBIT_CONTAINER}" -- rabbitmqctl list_queues
+# [OCP][INDEX] Show per-queue depth/consumers/memory
+# oc exec -n "${NS}" "${RABBIT_POD}" -c "${RABBIT_CONTAINER}" -- rabbitmqctl list_queues name messages_ready messages_unacknowledged consumers memory
+# [OCP][INDEX] List established message broker connections
+# oc exec -n "${NS}" "${RABBIT_POD}" -c "${RABBIT_CONTAINER}" -- rabbitmqctl list_connections
+
+# CATEGORY: Galera
+# [OCP][INDEX] Connect interactively as DBA (password prompted, not CLI/history; must be authorized)
+# oc rsh -n "${NS}" -c "${GALERA_CONTAINER}" "${GALERA_POD}" mysql -u root -p
+# [OCP][INDEX] Read wsrep cluster membership; interactive password prompt
+# oc rsh -n "${NS}" -c "${GALERA_CONTAINER}" "${GALERA_POD}" mysql -u root -p -e "SHOW GLOBAL STATUS LIKE 'wsrep_cluster_size';"
+# [OCP][INDEX] Read Galera primary component status
+# oc rsh -n "${NS}" -c "${GALERA_CONTAINER}" "${GALERA_POD}" mysql -u root -p -e "SHOW GLOBAL STATUS LIKE 'wsrep_cluster_status';"
+# [OCP][INDEX] Read local sync state
+# oc rsh -n "${NS}" -c "${GALERA_CONTAINER}" "${GALERA_POD}" mysql -u root -p -e "SHOW GLOBAL STATUS LIKE 'wsrep_local_state_comment';"
+# [OCP][INDEX] Check node readiness to accept writes
+# oc rsh -n "${NS}" -c "${GALERA_CONTAINER}" "${GALERA_POD}" mysql -u root -p -e "SHOW GLOBAL STATUS LIKE 'wsrep_ready';"
+# [OCP][INDEX] Read Galera replication connectivity
+# oc rsh -n "${NS}" -c "${GALERA_CONTAINER}" "${GALERA_POD}" mysql -u root -p -e "SHOW GLOBAL STATUS LIKE 'wsrep_connected';"
+
+# CATEGORY: Ceph
+# [CEPH][INDEX] Inspect Ceph health and detail
+# ceph -s && ceph health detail
+# [CEPH][INDEX] Inspect Ceph monitor quorum
+# ceph quorum_status --format json-pretty
+# [CEPH][INDEX] Inspect Ceph monitors
+# ceph mon dump
+# [CEPH][INDEX] Inspect active manager modules
+# ceph mgr dump --format json-pretty
+# [CEPH][INDEX] Inspect OSD tree
+# ceph osd tree
+# [CEPH][INDEX] Inspect OSD counts and states
+# ceph osd stat
+
+# CATEGORY: Monitoring
+# [OCP][INDEX] Discover Prometheus resources
+# oc get prometheus -A
+# [OCP][INDEX] Discover ServiceMonitors
+# oc get servicemonitors -A
+# [OCP][INDEX] Discover PrometheusRules
+# oc get prometheusrules -A
+
+# CATEGORY: Troubleshooting
+# [OCP][INDEX] Review operator log errors from a selected deployment
+# oc logs -n "${OPERATORS_NS}" deployment/"${OPERATOR_DEPLOYMENT}" --since=30m --all-containers=true
+# [OCP][INDEX] Retrieve bounded Ansible logs for selected EE pod
+# oc logs -n "${NS}" "${ANSIBLE_POD}" --all-containers=true --since=60m
+# [OCP][INDEX] Inspect failed Ansible job logs via Job controller
+# oc logs -n "${NS}" job/"${ANSIBLE_JOB}" --all-containers=true --since=60m
+# [EDPM][INDEX] Inspect recent kernel errors
+# sudo journalctl -k --since "1 hour ago" -p warning --no-pager
+# [OCP][INDEX] Review Nova scheduler service log around original request ID
+# oc logs -n "${NS}" "${NOVA_SCHEDULER_POD}" -c "${NOVA_SCHEDULER_CONTAINER}" --since=60m | grep -F "${REQUEST_ID}"
+# [OCP][INDEX] Review conductor service log around request ID
+# oc logs -n "${NS}" "${NOVA_CONDUCTOR_POD}" -c "${NOVA_CONDUCTOR_CONTAINER}" --since=60m | grep -F "${REQUEST_ID}"
+
+# CATEGORY: Maintenance
+
+# CATEGORY: Backup
+# [OCP][INDEX] Verify RHOSO backup configuration CR introduced in supported FR
+# oc get openstackbackupconfig -n "${NS}"
+# [OCP][INDEX] Inspect complete backup configuration (review secret references carefully)
+# oc get openstackbackupconfig -n "${NS}" -o yaml
+# [OCP][INDEX] Inventory Velero backups and phase
+# oc get backups.velero.io -n openshift-adp
+
+# TOP 30 RHOSO DAILY ADMINISTRATION COMMANDS
+# [OCP][INDEX] Inspect cluster node inventory
+# oc get nodes -o wide
+# [OCP][INDEX] Inspect operator readiness and degradation
+# oc get clusteroperators
+# [OCP][INDEX] Inspect cluster version
+# oc get clusterversion -o wide
+# [OCP][INDEX] Inspect nodes resource pressure
+# oc adm top nodes
+# [OCP][INDEX] Get latest cluster events
+# oc get events -A --sort-by=.lastTimestamp
+# [OCP][INDEX] Get pods with node placement
+# oc get pods -A -o wide
+# [OCP][INDEX] List PersistentVolumeClaims
+# oc get pvc -A
+# [OCP][INDEX] Discover RHOSO control plane namespace(s)
+# oc get openstackcontrolplane -A
+# [OCP][INDEX] Discover NodeSets
+# oc get openstackdataplanenodesets -A
+# [OCP][INDEX] Discover deployments
+# oc get openstackdataplanedeployments -A
+# [OCP][INDEX] Discover OpenStackAnsibleEE resources
+# oc get openstackansibleee -A
+# [OCP][INDEX] List all Galera CRs and topology
+# oc get galera -A
+# [OCP][INDEX] List RHOSO RabbitMQ CR status
+# oc get rabbitmq -A --show-labels
+# [OCP][INDEX] List control plane deployments
+# oc get deployments,statefulsets,daemonsets -n "${NS}" -o wide
+# [OS][INDEX] Validate token issuance without exposing token
+# openstack token issue -f value -c expires
+# [OS][INDEX] Inspect registered services
+# openstack service list
+# [OS][INDEX] Inspect API endpoint registration
+# openstack endpoint list
+# [OS][INDEX] List Compute service states
+# openstack compute service list
+# [OS][INDEX] List registered hypervisors
+# openstack hypervisor list
+# [OS][INDEX] Inspect aggregated hypervisor capacity
+# openstack hypervisor stats show
+# [OS][INDEX] Inspect network-agent state
+# openstack network agent list
+# [OS][INDEX] Read network API operations
+# openstack network list
+# [OS][INDEX] List routers
+# openstack router list --long
+# [OS][INDEX] List VM associated ports
+# openstack port list --server "${VM}"
+# [OS][INDEX] List Cinder backends and enabled/down state
+# openstack volume service list --long
+# [OS][INDEX] Read block storage API operations where enabled
+# openstack volume list
+# [OS][INDEX] Read image API operations
+# openstack image list
+# [OCP][INDEX] List host mappings by cell
+# oc exec -n "${NS}" "${NOVA_CONDUCTOR_POD}" -c "${NOVA_CONDUCTOR_CONTAINER}" -- nova-manage cell_v2 list_hosts
+# [OCP][INDEX] Display northbound logical topology using validated RHOSO pod execution
+# oc exec -n "${NS}" "${OVN_NB_POD}" -c "${OVN_NB_CONTAINER}" -- ovn-nbctl show
+# [OCP][INDEX] List OVN registered chassis
+# oc exec -n "${NS}" "${OVN_SB_POD}" -c "${OVN_SB_CONTAINER}" -- ovn-sbctl chassis-list
+
+# TOP 30 RHOSO TROUBLESHOOTING COMMANDS
+# [OCP][INDEX] Read scoped pod events and container states
+# oc describe pod -n "${NS}" "${POD}"
+# [OCP][INDEX] Review operator log errors from a selected deployment
+# oc logs -n "${OPERATORS_NS}" deployment/"${OPERATOR_DEPLOYMENT}" --since=30m --all-containers=true
+# [OCP][INDEX] Get latest cluster events
+# oc get events -A --sort-by=.lastTimestamp
+# [OCP][INDEX] List EndpointSlices and owning service labels
+# oc get endpointslices -A --show-labels
+# [OCP][INDEX] Inspect API routes
+# oc get routes -n "${NS}"
+# [OCP][INDEX] List PersistentVolumeClaims
+# oc get pvc -A
+# [OCP][INDEX] Find deployment Ansible Kubernetes Jobs
+# oc get jobs -n "${NS}" -l "openstackdataplanedeployment=${DP_DEPLOYMENT}"
+# [OCP][INDEX] Discover deployments
+# oc get openstackdataplanedeployments -A
+# [OCP][INDEX] Discover OpenStackAnsibleEE resources
+# oc get openstackansibleee -A
+# [EDPM][INDEX] Inspect recent kernel errors
+# sudo journalctl -k --since "1 hour ago" -p warning --no-pager
+# [EDPM][INDEX] Discover failed systemd units
+# sudo systemctl --failed --no-pager
+# [OS][INDEX] Inspect VM state and fault message
+# openstack server show "${VM}" -f yaml
+# [OS][INDEX] Retrieve VM console log
+# openstack console log show "${VM}"
+# [OS][INDEX] List Compute service states
+# openstack compute service list
+# [OS][INDEX] Inspect hypervisor resources
+# openstack hypervisor show "${COMPUTE_HOST}"
+# [OS][INDEX] List per-provider inventories
+# openstack resource provider inventory list "${RESOURCE_PROVIDER_UUID}"
+# [OS][INDEX] List provider current usage
+# openstack resource provider usage show "${RESOURCE_PROVIDER_UUID}"
+# [OCP][INDEX] List Nova cells (contains sensitive transport/DB connection endpoints; redact before sharing)
+# oc exec -n "${NS}" "${NOVA_CONDUCTOR_POD}" -c "${NOVA_CONDUCTOR_CONTAINER}" -- nova-manage cell_v2 list_cells
+# [OCP][INDEX] List host mappings by cell
+# oc exec -n "${NS}" "${NOVA_CONDUCTOR_POD}" -c "${NOVA_CONDUCTOR_CONTAINER}" -- nova-manage cell_v2 list_hosts
+# [OS][INDEX] Inspect binding details, security settings and allowed pairs
+# openstack port show "${PORT_ID}" -f yaml
+# [OS][INDEX] Inspect selected floating IP mapping
+# openstack floating ip show "${FLOATING_IP_ID}" -f yaml
+# [OCP][INDEX] Display northbound logical topology using validated RHOSO pod execution
+# oc exec -n "${NS}" "${OVN_NB_POD}" -c "${OVN_NB_CONTAINER}" -- ovn-nbctl show
+# [OCP][INDEX] List logical router NAT rules
+# oc exec -n "${NS}" "${OVN_NB_POD}" -c "${OVN_NB_CONTAINER}" -- ovn-nbctl lr-nat-list "${OVN_ROUTER}"
+# [OCP][INDEX] Inspect southbound port bindings
+# oc exec -n "${NS}" "${OVN_SB_POD}" -c "${OVN_SB_CONTAINER}" -- ovn-sbctl list Port_Binding
+# [OCP][INDEX] List OVN registered chassis
+# oc exec -n "${NS}" "${OVN_SB_POD}" -c "${OVN_SB_CONTAINER}" -- ovn-sbctl chassis-list
+# [EDPM][INDEX] Inspect OVS topology on EDPM node
+# sudo ovs-vsctl show
+# [OCP][INDEX] List RabbitMQ queues
+# oc exec -n "${NS}" "${RABBIT_POD}" -c "${RABBIT_CONTAINER}" -- rabbitmqctl list_queues
+# [OCP][INDEX] Read RabbitMQ node cluster membership
+# oc exec -n "${NS}" "${RABBIT_POD}" -c "${RABBIT_CONTAINER}" -- rabbitmqctl cluster_status
+# [OCP][INDEX] Read wsrep cluster membership; interactive password prompt
+# oc rsh -n "${NS}" -c "${GALERA_CONTAINER}" "${GALERA_POD}" mysql -u root -p -e "SHOW GLOBAL STATUS LIKE 'wsrep_cluster_size';"
+# [CEPH][INDEX] Inspect Ceph health and detail
+# ceph -s && ceph health detail
+
+# TOP 20 RHOSO NETWORK TROUBLESHOOTING COMMANDS
+# [OS][INDEX] Inspect network-agent state
+# openstack network agent list
+# [OS][INDEX] Inspect network provider segmentation, MTU and flags
+# openstack network show "${NETWORK}" -f yaml
+# [OS][INDEX] Inspect subnet DHCP, DNS and routes
+# openstack subnet show "${SUBNET}" -f yaml
+# [OS][INDEX] Inspect router gateway and attached ports
+# openstack router show "${ROUTER}" -f yaml
+# [OS][INDEX] Inspect binding details, security settings and allowed pairs
+# openstack port show "${PORT_ID}" -f yaml
+# [OS][INDEX] Inspect selected floating IP mapping
+# openstack floating ip show "${FLOATING_IP_ID}" -f yaml
+# [OS][INDEX] List individual security group rules
+# openstack security group rule list "${SECURITY_GROUP}"
+# [OS][INDEX] Inspect network QoS policies
+# openstack network qos policy list
+# [OCP][INDEX] Display northbound logical topology using validated RHOSO pod execution
+# oc exec -n "${NS}" "${OVN_NB_POD}" -c "${OVN_NB_CONTAINER}" -- ovn-nbctl show
+# [OCP][INDEX] List northbound logical switches
+# oc exec -n "${NS}" "${OVN_NB_POD}" -c "${OVN_NB_CONTAINER}" -- ovn-nbctl ls-list
+# [OCP][INDEX] List northbound logical routers
+# oc exec -n "${NS}" "${OVN_NB_POD}" -c "${OVN_NB_CONTAINER}" -- ovn-nbctl lr-list
+# [OCP][INDEX] List logical router NAT rules
+# oc exec -n "${NS}" "${OVN_NB_POD}" -c "${OVN_NB_CONTAINER}" -- ovn-nbctl lr-nat-list "${OVN_ROUTER}"
+# [OCP][INDEX] Inspect OVN DHCP option rows
+# oc exec -n "${NS}" "${OVN_NB_POD}" -c "${OVN_NB_CONTAINER}" -- ovn-nbctl list DHCP_Options
+# [OCP][INDEX] Show southbound topology
+# oc exec -n "${NS}" "${OVN_SB_POD}" -c "${OVN_SB_CONTAINER}" -- ovn-sbctl show
+# [OCP][INDEX] List OVN registered chassis
+# oc exec -n "${NS}" "${OVN_SB_POD}" -c "${OVN_SB_CONTAINER}" -- ovn-sbctl chassis-list
+# [OCP][INDEX] Inspect southbound port bindings
+# oc exec -n "${NS}" "${OVN_SB_POD}" -c "${OVN_SB_CONTAINER}" -- ovn-sbctl list Port_Binding
+# [EDPM][INDEX] Inspect OVS topology on EDPM node
+# sudo ovs-vsctl show
+# [EDPM][INDEX] List OVS bridges
+# sudo ovs-vsctl list-br
+# [EDPM][INDEX] Inspect br-int OpenFlow pipeline (can be large)
+# sudo ovs-ofctl -O OpenFlow13 dump-flows br-int
+# [EDPM][INDEX] Inspect routes and selected next-hop
+# ip route show table all
+
+# TOP 20 RHOSO COMPUTE TROUBLESHOOTING COMMANDS
+# [OS][INDEX] List Compute service states
+# openstack compute service list
+# [OS][INDEX] List registered hypervisors
+# openstack hypervisor list
+# [OS][INDEX] Inspect hypervisor resources
+# openstack hypervisor show "${COMPUTE_HOST}"
+# [OS][INDEX] Inspect aggregated hypervisor capacity
+# openstack hypervisor stats show
+# [OCP][INDEX] List Nova cells (contains sensitive transport/DB connection endpoints; redact before sharing)
+# oc exec -n "${NS}" "${NOVA_CONDUCTOR_POD}" -c "${NOVA_CONDUCTOR_CONTAINER}" -- nova-manage cell_v2 list_cells
+# [OCP][INDEX] List host mappings by cell
+# oc exec -n "${NS}" "${NOVA_CONDUCTOR_POD}" -c "${NOVA_CONDUCTOR_CONTAINER}" -- nova-manage cell_v2 list_hosts
+# [OS][INDEX] List Placement resource providers (plugin required)
+# openstack resource provider list
+# [OS][INDEX] List per-provider inventories
+# openstack resource provider inventory list "${RESOURCE_PROVIDER_UUID}"
+# [OS][INDEX] List provider current usage
+# openstack resource provider usage show "${RESOURCE_PROVIDER_UUID}"
+# [OS][INDEX] List resource provider traits
+# openstack resource provider trait list "${RESOURCE_PROVIDER_UUID}"
+# [OS][INDEX] Inspect VM state and fault message
+# openstack server show "${VM}" -f yaml
+# [OS][INDEX] List VMs resident on compute host
+# openstack server list --all-projects --host "${COMPUTE_HOST}"
+# [OS][INDEX] List live and cold migration records
+# openstack server migration list --server "${VM}"
+# [OS][INDEX] Retrieve VM console log
+# openstack console log show "${VM}"
+# [OS][INDEX] Inspect host aggregate members and properties
+# openstack aggregate show "${AGGREGATE}"
+# [OS][INDEX] Inspect affinity/anti-affinity policy
+# openstack server group show "${SERVER_GROUP}"
+# [OS][INDEX] Inspect selected flavor extra specs
+# openstack flavor show "${FLAVOR}"
+# [EDPM][INDEX] Inspect CPU NUMA node summary
+# numactl --hardware
+# [EDPM][INDEX] Inspect hugepages and memory
+# grep -Ei "HugePages|Hugepagesize|MemTotal|MemAvailable" /proc/meminfo
+# [EDPM][INDEX] EDPM Nova Compute service logs
+# sudo journalctl -u "${NOVA_COMPUTE_UNIT}" --since "${SINCE}" --until "${UNTIL}" --no-pager
+
+# TOP 20 RHOSO STORAGE TROUBLESHOOTING COMMANDS
+# [OS][INDEX] List Cinder backends and enabled/down state
+# openstack volume service list --long
+# [OS][INDEX] Read block storage API operations where enabled
+# openstack volume list
+# [OS][INDEX] Inspect volume status and attachments
+# openstack volume show "${VOLUME}" -f yaml
+# [OS][INDEX] Inspect backend-name type mapping
+# openstack volume type show "${VOLUME_TYPE}"
+# [OS][INDEX] List volume snapshots
+# openstack volume snapshot list --all-projects
+# [OS][INDEX] List volume backups
+# openstack volume backup list --all-projects
+# [OS][INDEX] List attached volumes
+# openstack server volume list "${VM}"
+# [EDPM][INDEX] Inspect multipath maps (iSCSI/FC only)
+# sudo multipath -ll
+# [EDPM][INDEX] Inspect iSCSI sessions, if using iSCSI
+# sudo iscsiadm -m session
+# [CEPH][INDEX] Inspect Ceph health and detail
+# ceph -s && ceph health detail
+# [CEPH][INDEX] Inspect detailed Ceph warning/error messages
+# ceph health detail
+# [CEPH][INDEX] Inspect OSD tree
+# ceph osd tree
+# [CEPH][INDEX] Inspect per-OSD usage
+# ceph osd df tree
+# [CEPH][INDEX] Inspect OSD performance latency
+# ceph osd perf
+# [CEPH][INDEX] Inspect placement-group status
+# ceph pg stat
+# [CEPH][INDEX] Inspect pool-level utilization
+# ceph df detail
+# [CEPH][INDEX] List pools with details
+# ceph osd pool ls detail
+# [CEPH][INDEX] Inspect RBD image metadata
+# rbd info "${POOL}/${RBD_IMAGE}"
+# [CEPH][INDEX] Inspect in-use client watchers
+# rbd status "${POOL}/${RBD_IMAGE}"
+# [OCP][INDEX] List PersistentVolumeClaims
+# oc get pvc -A
+
+# Official Red Hat source links and a complete executable health-check script follow in the consolidated distribution.
