@@ -10,11 +10,16 @@ RabbitMQ, HA, forensic troubleshooting, planned maintenance, and recovery.
 
 ## Start here
 
+- [Standard Operating Procedures (SOP) and improvement proposals](SOP/README.md)
 - [Execution contexts, prerequisites and verification limits](docs/00-usage-and-conventions.md)
 - [Official Red Hat documentation](docs/official-sources.md)
 - [Read-only daily health-check script](scripts/rhoso-healthcheck.sh)
 - [Original consolidated runbook (plain text)](source/RHOSO_18x_Complete_Production_Runbook.txt)
 - [Original command reference (plain text)](source/RHOSO_18x_Production_Administration_Reference.txt)
+
+## Standard operating procedures
+
+The [SOP directory](SOP/README.md) provides a [standard procedure template](SOP/TEMPLATE.md), [contribution/review process](SOP/CONTRIBUTING.md), four **DRAFT** operational procedures and a [prioritized improvement backlog](SOP/IMPROVEMENTS.md). Procedures remain unapproved for production until tested and signed off for the deployed RHOSO version and topology. SOP changes use an accompanying [PR checklist](.github/PULL_REQUEST_TEMPLATE/sop-change.md).
 
 ## Administration reference — 21 sections
 
@@ -77,6 +82,7 @@ These outcomes are not equivalent to end-to-end RHOSO transaction validation.
 ```text
 RHOSO/
 ├── README.md
+├── SOP/                           # Versioned operating procedures and improvement backlog
 ├── docs/                          # 21 numbered Markdown reference sections
 │   ├── 00-usage-and-conventions.md
 │   └── official-sources.md
@@ -85,5 +91,5 @@ RHOSO/
 └── .github/workflows/validate.yml # Bash syntax and documentation checks
 ```
 
-**Source reference preparation date:** 2026-10-20. Check installed RHOSO minor/micro versions,
+**Source reference preparation date:** 2026-10-20. **SOP scaffold date:** 2026-10-20. Check installed RHOSO minor/micro versions,
 Operator versions and official Red Hat documentation for subsequent changes.
