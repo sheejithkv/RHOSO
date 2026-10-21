@@ -10,6 +10,9 @@ RabbitMQ, HA, forensic troubleshooting, planned maintenance, and recovery.
 
 ## Start here
 
+**[Visual SOP design preview and viewer instructions](SOP/visual/README.md)** · [SOP catalogue](SOP/README.md)
+
+
 - [Standard Operating Procedures (SOP) and improvement proposals](SOP/README.md)
 - [Execution contexts, prerequisites and verification limits](docs/00-usage-and-conventions.md)
 - [Official Red Hat documentation](docs/official-sources.md)

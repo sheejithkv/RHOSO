@@ -3,6 +3,15 @@
 > [!IMPORTANT]
 > These are **engineer-facing, versioned SOPs**, not a script to execute from top to bottom. The current procedures and worked examples are **DRAFT** and have **not** been approved or tested against a production RHOSO environment. Validate commands against your release, service layout and organizational change process.
 
+## Visual SOP layout — open the styled version
+
+![SOP visual design overview](visual/sop-preview.svg)
+
+**[Download / open the styled SOP interface](visual/index.html)** · [Viewing instructions and validation](visual/README.md)
+
+> [!NOTE]
+> The GitHub file viewer shows HTML **source**. To see the designed interface matching the proposal, download `visual/index.html` using **Raw / Download raw file** and open it locally in your browser. A copy at `docs/sop/index.html` is Pages-ready, but GitHub Pages hosting is not enabled or verified. The SVG above is a schematic preview, not a screenshot of a live RHOSO system.
+
 ## Operations library
 
 | Area | Primary operating procedure | Worked engineer example | Purpose |

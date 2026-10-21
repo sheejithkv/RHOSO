@@ -1,0 +1,115 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 960" role="img" aria-labelledby="title desc"><title id="title">RHOSO 18.x standard operating procedure visual layout</title><desc id="desc">A schematic preview of the real styled SOP viewer with sidebar, metadata, purpose, scope, prerequisites, risks, expected outcomes and a numbered command matrix.</desc><rect x="0" y="0" width="1400" height="960" rx="0" fill="#f0f4f8" stroke="none"/>
+<rect x="0" y="0" width="238" height="960" rx="0" fill="#fff" stroke="none"/>
+<rect x="238" y="0" width="1162" height="82" rx="0" fill="#143755" stroke="none"/>
+<rect x="20" y="21" width="35" height="35" rx="8" fill="#c62130" stroke="none"/>
+<text x="28" y="44" font-family="Arial, Helvetica, sans-serif" font-size="13" fill="white" font-weight="800">RH</text>
+<text x="65" y="34" font-family="Arial, Helvetica, sans-serif" font-size="16" fill="#153a59" font-weight="800">RHOSO 18.x</text>
+<text x="65" y="51" font-family="Arial, Helvetica, sans-serif" font-size="9" fill="#778a9f" font-weight="700">OPERATIONS RUNBOOKS</text>
+<text x="25" y="108" font-family="Arial, Helvetica, sans-serif" font-size="11" fill="#9aa8b7" font-weight="800">SOP CATALOGUE</text>
+<rect x="12" y="122" width="210" height="46" rx="6" fill="#1d5d92" stroke="none"/>
+<text x="27" y="145" font-family="Arial, Helvetica, sans-serif" font-size="15" fill="white" font-weight="700">SOP-INC-001</text>
+<text x="27" y="160" font-family="Arial, Helvetica, sans-serif" font-size="10" fill="#dcecf9" font-weight="400">Incident investigation</text>
+<text x="27" y="202" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="#435c72" font-weight="700">SOP-OPS-001</text>
+<text x="27" y="217" font-family="Arial, Helvetica, sans-serif" font-size="10" fill="#75899c" font-weight="400">Daily operations</text>
+<text x="27" y="245" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="#435c72" font-weight="700">SOP-MNT-001</text>
+<text x="27" y="260" font-family="Arial, Helvetica, sans-serif" font-size="10" fill="#75899c" font-weight="400">Planned maintenance</text>
+<text x="27" y="288" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="#435c72" font-weight="700">SOP-REC-001</text>
+<text x="27" y="303" font-family="Arial, Helvetica, sans-serif" font-size="10" fill="#75899c" font-weight="400">Recovery readiness</text>
+<text x="25" y="351" font-family="Arial, Helvetica, sans-serif" font-size="10" fill="#8998a8" font-weight="700">ON THIS PAGE</text>
+<text x="30" y="377" font-family="Arial, Helvetica, sans-serif" font-size="11" fill="#56708b" font-weight="400">1.  Purpose</text>
+<text x="30" y="404" font-family="Arial, Helvetica, sans-serif" font-size="11" fill="#56708b" font-weight="400">2.  Scope</text>
+<text x="30" y="431" font-family="Arial, Helvetica, sans-serif" font-size="11" fill="#56708b" font-weight="400">3.  Prerequisites</text>
+<text x="30" y="458" font-family="Arial, Helvetica, sans-serif" font-size="11" fill="#56708b" font-weight="400">4.  Impact and risks</text>
+<text x="30" y="485" font-family="Arial, Helvetica, sans-serif" font-size="11" fill="#56708b" font-weight="400">5.  Procedure overview</text>
+<text x="30" y="512" font-family="Arial, Helvetica, sans-serif" font-size="11" fill="#56708b" font-weight="400">6.  Detailed procedure</text>
+<text x="30" y="539" font-family="Arial, Helvetica, sans-serif" font-size="11" fill="#56708b" font-weight="400">7.  Validation</text>
+<text x="30" y="566" font-family="Arial, Helvetica, sans-serif" font-size="11" fill="#56708b" font-weight="400">8.  Troubleshooting</text>
+<text x="30" y="593" font-family="Arial, Helvetica, sans-serif" font-size="11" fill="#56708b" font-weight="400">9.  Rollback</text>
+<text x="30" y="620" font-family="Arial, Helvetica, sans-serif" font-size="11" fill="#56708b" font-weight="400">10.  References</text>
+<text x="30" y="647" font-family="Arial, Helvetica, sans-serif" font-size="11" fill="#56708b" font-weight="400">11.  Revision history</text>
+<text x="270" y="37" font-family="Arial, Helvetica, sans-serif" font-size="24" fill="white" font-weight="700">Standard Operating Procedure (SOP)</text>
+<text x="270" y="58" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#d0e2f2" font-weight="400">Red Hat OpenStack Services on OpenShift  •  RHOSO 18.x</text>
+<text x="1100" y="42" font-family="Arial, Helvetica, sans-serif" font-size="17" fill="white" font-weight="800">RHOSO 18.x</text>
+<text x="270" y="112" font-family="Arial, Helvetica, sans-serif" font-size="22" fill="#183249" font-weight="800">SOP-INC-001: Troubleshoot VM Stuck in BUILD / ERROR</text>
+<rect x="270" y="128" width="270" height="59" rx="3" fill="#fff" stroke="#dce5ed"/>
+<text x="284" y="148" font-family="Arial, Helvetica, sans-serif" font-size="10" fill="#8ca0b0" font-weight="700">VERSION</text>
+<text x="284" y="170" font-family="Arial, Helvetica, sans-serif" font-size="13" fill="#2b4863" font-weight="700">0.3 · VISUAL EDITION</text>
+<rect x="547" y="128" width="270" height="59" rx="3" fill="#fff" stroke="#dce5ed"/>
+<text x="561" y="148" font-family="Arial, Helvetica, sans-serif" font-size="10" fill="#8ca0b0" font-weight="700">REVIEW STATUS</text>
+<text x="561" y="170" font-family="Arial, Helvetica, sans-serif" font-size="13" fill="#a46d13" font-weight="700">DRAFT · UNVERIFIED</text>
+<rect x="824" y="128" width="270" height="59" rx="3" fill="#fff" stroke="#dce5ed"/>
+<text x="838" y="148" font-family="Arial, Helvetica, sans-serif" font-size="10" fill="#8ca0b0" font-weight="700">PLATFORM</text>
+<text x="838" y="170" font-family="Arial, Helvetica, sans-serif" font-size="13" fill="#2b4863" font-weight="700">RHOSO 18.x</text>
+<rect x="1101" y="128" width="270" height="59" rx="3" fill="#fff" stroke="#dce5ed"/>
+<text x="1115" y="148" font-family="Arial, Helvetica, sans-serif" font-size="10" fill="#8ca0b0" font-weight="700">OWNER</text>
+<text x="1115" y="170" font-family="Arial, Helvetica, sans-serif" font-size="13" fill="#2b4863" font-weight="700">Unassigned</text>
+<rect x="270" y="198" width="1100" height="40" rx="6" fill="#e7f2fd" stroke="#cddfee"/>
+<text x="289" y="222" font-family="Arial, Helvetica, sans-serif" font-size="13" fill="#315f86" font-weight="600">ⓘ  DRAFT SOP — Validate release and environment before executing commands.</text>
+<rect x="270" y="253" width="650" height="85" rx="7" fill="#fff" stroke="#dce5ed"/>
+<rect x="270" y="253" width="650" height="29" rx="5" fill="#28669a" stroke="none"/>
+<text x="284" y="273" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="white" font-weight="700">1  PURPOSE</text>
+<text x="286" y="310" font-family="Arial, Helvetica, sans-serif" font-size="13" fill="#2a4359" font-weight="400">Identify the first proven failure in a Nova VM creation transaction.</text>
+<rect x="270" y="349" width="650" height="95" rx="7" fill="#fff" stroke="#dce5ed"/>
+<rect x="270" y="349" width="650" height="29" rx="5" fill="#28669a" stroke="none"/>
+<text x="284" y="369" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="white" font-weight="700">2  SCOPE</text>
+<text x="286" y="406" font-family="Arial, Helvetica, sans-serif" font-size="13" fill="#2a4359" font-weight="400">Nova, Placement, Neutron, Glance, Cinder and EDPM where implicated.</text>
+<rect x="270" y="455" width="650" height="91" rx="7" fill="#fff" stroke="#dce5ed"/>
+<rect x="270" y="455" width="650" height="29" rx="5" fill="#28669a" stroke="none"/>
+<text x="284" y="475" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="white" font-weight="700">3  PREREQUISITES</text>
+<text x="286" y="512" font-family="Arial, Helvetica, sans-serif" font-size="13" fill="#2a4359" font-weight="400">Authenticated cloud context · exact VM UUID · incident timestamp</text>
+<rect x="936" y="253" width="434" height="180" rx="8" fill="#fff2d5" stroke="#eed695"/>
+<text x="952" y="282" font-family="Arial, Helvetica, sans-serif" font-size="16" fill="#875616" font-weight="700">⚠  4  IMPACT AND RISKS</text>
+<text x="952" y="312" font-family="Arial, Helvetica, sans-serif" font-size="13" fill="#644d2d" font-weight="400">• No automatic service restarts or VM deletion</text>
+<text x="952" y="338" font-family="Arial, Helvetica, sans-serif" font-size="13" fill="#644d2d" font-weight="400">• BUILD/ERROR does not prove root cause</text>
+<text x="952" y="364" font-family="Arial, Helvetica, sans-serif" font-size="13" fill="#644d2d" font-weight="400">• Stop if credentials or ownership are unknown</text>
+<rect x="936" y="446" width="434" height="100" rx="7" fill="#e2f8ec" stroke="#c6ebd2"/>
+<text x="952" y="475" font-family="Arial, Helvetica, sans-serif" font-size="16" fill="#155e3b" font-weight="700">✓   EXPECTED OUTCOME</text>
+<text x="952" y="501" font-family="Arial, Helvetica, sans-serif" font-size="13" fill="#275741" font-weight="400">Determine first proven failure boundary; reproduce</text>
+<text x="952" y="520" font-family="Arial, Helvetica, sans-serif" font-size="13" fill="#275741" font-weight="400">original VM transaction after approved remediation.</text>
+<rect x="270" y="558" width="1100" height="86" rx="7" fill="#fff" stroke="#dce5ed"/>
+<rect x="270" y="558" width="1100" height="30" rx="5" fill="#28669a" stroke="none"/>
+<text x="286" y="579" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="white" font-weight="700">5  PROCEDURE OVERVIEW</text>
+<rect x="286" y="596" width="199" height="35" rx="5" fill="#eff6fc" stroke="#ccdfef"/>
+<text x="298" y="618" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#2d608a" font-weight="700">Capture VM + time</text>
+<text x="489" y="619" font-family="Arial, Helvetica, sans-serif" font-size="20" fill="#3375a6" font-weight="800">›</text>
+<rect x="501" y="596" width="199" height="35" rx="5" fill="#eff6fc" stroke="#ccdfef"/>
+<text x="513" y="618" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#2d608a" font-weight="700">Verify Nova state</text>
+<text x="704" y="619" font-family="Arial, Helvetica, sans-serif" font-size="20" fill="#3375a6" font-weight="800">›</text>
+<rect x="716" y="596" width="199" height="35" rx="5" fill="#eff6fc" stroke="#ccdfef"/>
+<text x="728" y="618" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#2d608a" font-weight="700">Scheduler / Placement</text>
+<text x="919" y="619" font-family="Arial, Helvetica, sans-serif" font-size="20" fill="#3375a6" font-weight="800">›</text>
+<rect x="931" y="596" width="199" height="35" rx="5" fill="#eff6fc" stroke="#ccdfef"/>
+<text x="943" y="618" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#2d608a" font-weight="700">Trace dependency</text>
+<text x="1134" y="619" font-family="Arial, Helvetica, sans-serif" font-size="20" fill="#3375a6" font-weight="800">›</text>
+<rect x="1146" y="596" width="199" height="35" rx="5" fill="#eff6fc" stroke="#ccdfef"/>
+<text x="1158" y="618" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#2d608a" font-weight="700">Validate original request</text>
+<rect x="270" y="655" width="1100" height="223" rx="7" fill="#fff" stroke="#dce5ed"/>
+<rect x="270" y="655" width="1100" height="31" rx="5" fill="#28669a" stroke="none"/>
+<text x="286" y="676" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="white" font-weight="700">6  DETAILED PROCEDURE — COMMAND / EXPECTED RESULT / INTERPRETATION</text>
+<rect x="280" y="693" width="1080" height="33" rx="0" fill="#e7eff6" stroke="none"/>
+<text x="291" y="714" font-family="Arial, Helvetica, sans-serif" font-size="11" fill="#365876" font-weight="700">STEP</text>
+<text x="358" y="714" font-family="Arial, Helvetica, sans-serif" font-size="11" fill="#365876" font-weight="700">ACTION</text>
+<text x="587" y="714" font-family="Arial, Helvetica, sans-serif" font-size="11" fill="#365876" font-weight="700">COMMAND / CONTEXT</text>
+<text x="914" y="714" font-family="Arial, Helvetica, sans-serif" font-size="11" fill="#365876" font-weight="700">EXPECTED OUTPUT</text>
+<text x="1119" y="714" font-family="Arial, Helvetica, sans-serif" font-size="11" fill="#365876" font-weight="700">INTERPRETATION</text>
+<rect x="280" y="728" width="1080" height="44" rx="0" fill="#fff" stroke="none"/>
+<text x="293" y="755" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="#2d6696" font-weight="800">01</text>
+<text x="358" y="755" font-family="Arial, Helvetica, sans-serif" font-size="13" fill="#27425b" font-weight="700">Identify VM</text>
+<rect x="578" y="733" width="323" height="36" rx="4" fill="#18304a" stroke="none"/>
+<text x="589" y="755" font-family="Arial, Helvetica, sans-serif" font-size="11" fill="#dce8f3" font-weight="400">openstack server show "$VM_UUID"</text>
+<text x="912" y="755" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#1f344a" font-weight="400">Instance status and fault</text>
+<text x="1119" y="755" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#1f344a" font-weight="400">State is symptom</text>
+<rect x="280" y="776" width="1080" height="44" rx="0" fill="#f7fafc" stroke="none"/>
+<text x="293" y="803" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="#2d6696" font-weight="800">02</text>
+<text x="358" y="803" font-family="Arial, Helvetica, sans-serif" font-size="13" fill="#27425b" font-weight="700">Instance events</text>
+<rect x="578" y="781" width="323" height="36" rx="4" fill="#18304a" stroke="none"/>
+<text x="589" y="803" font-family="Arial, Helvetica, sans-serif" font-size="11" fill="#dce8f3" font-weight="400">openstack server event list</text>
+<text x="912" y="803" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#1f344a" font-weight="400">Timestamped events</text>
+<text x="1119" y="803" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#1f344a" font-weight="400">Trace first failure</text>
+<rect x="280" y="824" width="1080" height="44" rx="0" fill="#fff" stroke="none"/>
+<text x="293" y="851" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="#2d6696" font-weight="800">03</text>
+<text x="358" y="851" font-family="Arial, Helvetica, sans-serif" font-size="13" fill="#27425b" font-weight="700">Nova services</text>
+<rect x="578" y="829" width="323" height="36" rx="4" fill="#18304a" stroke="none"/>
+<text x="589" y="851" font-family="Arial, Helvetica, sans-serif" font-size="11" fill="#dce8f3" font-weight="400">openstack compute service list</text>
+<text x="912" y="851" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#1f344a" font-weight="400">Service availability</text>
+<text x="1119" y="851" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#1f344a" font-weight="400">Not proof of capacity</text></svg>
