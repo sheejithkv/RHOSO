@@ -24,3 +24,23 @@ jobs:
           test -s docs/official-sources.md
           test -s source/RHOSO_18x_Complete_Production_Runbook.txt
           git diff --check
+      - name: Validate styled SOP HTML and JavaScript
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s SOP/visual/index.html
+          test -s SOP/visual/sop-preview.svg
+          test -s SOP/visual/README.md
+          cmp -s SOP/visual/index.html docs/sop/index.html
+          python - <<'PY'
+          from pathlib import Path
+          from html.parser import HTMLParser
+          html = Path('SOP/visual/index.html').read_text()
+          for marker in ['id="selector"', 'id="anchors"', 'id="main"', 'DRAFT', 'SIMULATED', 'Expected outcome', 'Detailed procedure', 'Rollback']:
+              assert marker in html, f'Missing required visual SOP marker: {marker}'
+          assert '<script>' in html and '</script>' in html
+          Path('/tmp/rhoso-sop-viewer.js').write_text(html.split('<script>', 1)[1].split('</script>', 1)[0])
+          class Parse(HTMLParser): pass
+          Parse().feed(html)
+          PY
+          node --check /tmp/rhoso-sop-viewer.js

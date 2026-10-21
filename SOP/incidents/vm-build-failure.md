@@ -1,4 +1,66 @@
-# SOP-INC-001: VM stuck in BUILD or enters ERROR
+# SOP-INC-001 · Investigate VM Stuck in BUILD / ERROR
+
+> [!WARNING]
+> **DRAFT — NOT APPROVED FOR LIVE PRODUCTION.** Release-dependent commands require target-environment verification. **No production execution has been performed.**
+
+| Document control | Value | Document control | Value |
+| :--- | :--- | :--- | :--- |
+| **SOP ID** | SOP-INC-001 | **Version** | 0.2.0 |
+| **Status** | DRAFT | **Type** | incidents |
+| **Release** | RHOSO 18.x (micro-release unverified) | **Owner / Approver** | Not assigned |
+| **Last live validation** | Not performed | **Execution** | [OCP] / [OS] as marked |
+| **Change reference** | Required for any write | **Authoritative owner** | Discover Operator / GitOps / Helm |
+
+**Quick navigation:** [Purpose](#1-purpose) · [Scope](#2-scope) · [Prerequisites](#3-prerequisites) · [Risks](#4-impact-and-risks) · [Flow](#5-decision-path) · [Steps](#6-detailed-procedure) · [Validation](#7-validation) · [Rollback](#8-rollback--recovery) · [Troubleshooting](#9-troubleshooting-and-escalation) · [References](#10-references) · [History](#11-revision-history)
+
+## 1. Purpose
+
+Trace a particular instance creation request to the first provably failed Nova, Placement, Neutron, Cinder/Glance or EDPM transaction.
+
+**Expected operational outcome:** Locate matching request ID, timestamp and first failing subsystem; after an independently approved fix, reproduce the original VM create transaction.
+
+## 2. Scope
+
+RHOSO 18.x only with deployed, supported components. Reference names and namespaces are **not** assumed. See the site-specific support matrix before performing changes.
+
+## 3. Prerequisites
+
+Authenticated [OCP] OpenShift workstation and discovered [OS] OpenStackClient when needed; least-privilege credentials; correct cloud/project/region/host; incident or approved change ticket; known authoritative owner.
+
+## 4. Impact and risks
+
+> [!CAUTION]
+> Read-only diagnosis; no retry/delete/rebuild/restart from BUILD or ERROR alone. **STOP** if the original transaction, command context, controller ownership, prerequisites or rollback capability is unknown.
+
+## 5. Decision path
+
+```mermaid
+flowchart TD
+  A["Identify scope, transaction and timestamp"] --> B["Run read-only discovery"]
+  B --> C{"Proven failure or objective verified?"}
+  C -- No --> D["Record UNKNOWN and escalate"]
+  C -- Yes --> E{"Mutation required?"}
+  E -- Yes --> F["Validate owner, approval, risk and rollback"]
+  F --> G["Controlled change only"]
+  E -- No --> H["Record observations"]
+  G --> I["Reproduce original transaction"]
+  H --> I
+  I --> J["Document result and handover"]
+```
+
+## 6. Detailed procedure
+
+| Step | Description | Exact command and context | Expected result | Interpretation / stop |
+| :--- | :--- | :--- | :--- | :--- |
+| 1 | Identify instance | `[OS] openstack server show "$VM_UUID" -f yaml` | Exact fault/status and instance ID | Status is symptom, not cause |
+| 2 | Read instance events | `[OS] openstack server event list "$VM_UUID"` | Timestamped actions; request linkage if available | Use earliest matching failure |
+| 3 | Inspect service inventory | `[OS] openstack compute service list` | Compute up/down and enabled flags | Not proof of Placement eligibility |
+| 4 | Correlate logs | `[OCP] oc logs -n "$RHOSO_NAMESPACE" "$NOVA_POD" -c "$NOVA_CONTAINER" --timestamps --since=60m` | Matching request ID or instance at incident time | Escalate to first failing fault domain |
+
+> [!NOTE]
+> Run commands **individually in their stated execution context**. Substitute real discovered values. The matrix above is a reference; do not execute a table directly.
+
+### Full procedure and environment discovery
 
 | Field | Value |
 | --- | --- |
@@ -67,3 +129,28 @@ oc logs -n "$RHOSO_NAMESPACE" "$NOVA_POD" -c "$NOVA_CONTAINER" --timestamps --si
 ## Stop / remediation boundary
 
 This SOP is intentionally read-only. **Do not retry server creation, delete a port/VM, change quotas, force service state, or restart Nova based solely on BUILD/ERROR.** Document controller ownership, first proven failure, minimal reviewed change, risk, rollback and the test that reproduces the **original VM provisioning transaction**. Escalate when evidence crosses into a different fault domain.
+
+## 7. Validation
+
+Locate matching request ID, timestamp and first failing subsystem; after an independently approved fix, reproduce the original VM create transaction. Record observed values, timestamp, request/VM/host reference, and explicit PASS / FAIL / UNAVAILABLE; a healthy Kubernetes object is not an end-to-end test.
+
+## 8. Rollback / recovery
+
+No change in this SOP. A separate approved remediation requires rollback with workload-specific safeguards.
+
+## 9. Troubleshooting and escalation
+
+Classify evidence into **PROVEN HEALTHY**, **PROVEN BROKEN**, **INFERENCE**, **HYPOTHESIS**, and **UNKNOWN**. Record the first proven boundary; do not infer trigger/root cause from labels without logs.
+
+## 10. References
+
+- [RHOSO 18.x admin command reference](../../docs/00-usage-and-conventions.md)
+- [Official Red Hat sources](../../docs/official-sources.md)
+- [Worked example for this area](EXAMPLE.md) (**SIMULATED**, not observed)
+
+## 11. Revision history
+
+| Version | Date (UTC) | Change | Site verification |
+| :--- | :--- | :--- | :--- |
+| 0.1.0 | 2026-10-20 | Starter draft | Not performed |
+| 0.2.0 | 2026-10-21 | Visual SOP metadata, step/expected matrices and example links | Not performed |

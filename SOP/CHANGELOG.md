@@ -1,9 +1,8 @@
-# SOP change history
+# SOP revision history
 
-Use a new row for each material SOP change. Link the review PR and ticket, and record real validation evidence or state that it is absent.
+| Date (UTC) | Scope | Version | Status | Details / validation |
+| :--- | :--- | :--- | :--- | :--- |
+| 2026-10-20 | SOP framework and four starter documents | 0.1.0 | DRAFT | Initial directory; untested on target cluster |
+| 2026-10-21 | All four SOPs, template, navigation, example docs | 0.2.0 | DRAFT | Standardized visual step/expected/evidence layout; four simulated worked examples; GitHub formatting review; **no live RHOSO validation** |
 
-| Date (UTC) | Scope | Version | Status | Reason / evidence |
-| --- | --- | --- | --- | --- |
-| 2026-10-20 | SOP framework + four initial procedures | 0.1.0 | DRAFT | Initial structure, workflow and proposals; no target-cluster execution or approval |
-
-For future changes, record author/reviewer, affected RHOSO maintenance releases, risks, rollback updates and any superseding SOP IDs. Git history is authoritative for detailed diffs.
+Authoritative document approvals remain unassigned. Record real change-ticket, reviewer identity, specific RHOSO micro release and acceptance evidence before approving any SOP. Git history retains the exact diff.
