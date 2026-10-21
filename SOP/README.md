@@ -1,42 +1,46 @@
-# RHOSO Standard Operating Procedures (SOP)
+# RHOSO 18.x · Standard Operating Procedures
 
-This directory holds **transaction-oriented operational procedures** for Red Hat OpenStack Services on OpenShift (RHOSO) 18.x. The numbered [command catalogue](../docs/00-usage-and-conventions.md) describes available commands; SOPs describe **when, why, by whom, and how to validate** a particular operation.
+> [!IMPORTANT]
+> These are **engineer-facing, versioned SOPs**, not a script to execute from top to bottom. The current procedures and worked examples are **DRAFT** and have **not** been approved or tested against a production RHOSO environment. Validate commands against your release, service layout and organizational change process.
 
-**Status:** All starter SOPs are DRAFT examples, not locally approved production procedures. A successful CLI response alone does not establish end-to-end service health.
+## Operations library
 
-## Directory map
+| Area | Primary operating procedure | Worked engineer example | Purpose |
+| :--- | :--- | :--- | :--- |
+| **Operations** | [SOP-OPS-001 — Daily health check](operations/daily-health-check.md) | [Example: daily shift verification](operations/EXAMPLE.md) | Discover, run, classify, escalate |
+| **Incidents** | [SOP-INC-001 — VM BUILD/ERROR](incidents/vm-build-failure.md) | [Example: Nova scheduler boundary](incidents/EXAMPLE.md) | Follow the request across services |
+| **Maintenance** | [SOP-MNT-001 — Compute host](maintenance/compute-host-maintenance.md) | [Example: controlled host drain](maintenance/EXAMPLE.md) | Approve, disable, migrate, verify |
+| **Recovery** | [SOP-REC-001 — Backup readiness](recovery/backup-readiness.md) | [Example: review recovery readiness](recovery/EXAMPLE.md) | Check backup evidence; do not assume recoverability |
 
-- [Procedure template](TEMPLATE.md) — copy for a new or revised SOP
-- [Contributing and approval workflow](CONTRIBUTING.md) — versioning, evidence, safety and review rules
-- [Improvement backlog](IMPROVEMENTS.md) — prioritized, not-yet-implemented enhancements
-- [Change log](CHANGELOG.md) — SOP changes and review history
-- [Daily RHOSO health check](operations/daily-health-check.md) — read-only operational review
-- [VM BUILD/ERROR incident](incidents/vm-build-failure.md) — transaction-first investigation
-- [Compute maintenance](maintenance/compute-host-maintenance.md) — change-controlled host scheduling and migration
-- [Backup readiness](recovery/backup-readiness.md) — read-only protection verification, not a restore procedure
+## Standard authoring system
 
-## Status lifecycle
+| Resource | Use |
+| :--- | :--- |
+| [SOP template](TEMPLATE.md) | Document-control panel; numbered sections; step/command/expected/interpretation layout |
+| [Contribution and approval rules](CONTRIBUTING.md) | Author, review, evidence, release, deprecation |
+| [Improvement backlog](IMPROVEMENTS.md) | Prioritized proposed controls and future SOPs |
+| [Revision history](CHANGELOG.md) | Audit trail for document changes |
+| [Red Hat references](../docs/official-sources.md) | Verify against the target RHOSO release |
 
-**DRAFT** -> **REVIEWED** -> **APPROVED** -> **DEPRECATED**
+### Standard 11-part SOP anatomy
 
-- DRAFT: proposed, untested or incomplete in the target environment.
-- REVIEWED: architecture, command syntax, security and rollback reviewed; site validation pending.
-- APPROVED: named technical owner and approver accepted a version-specific procedure and recorded evidence from the target environment.
-- DEPRECATED: superseded or incompatible; retain history and successor link.
+~~~mermaid
+flowchart LR
+  A["Title + metadata"] --> B["Purpose + scope"]
+  B --> C["Access + risk gate"]
+  C --> D["Decision path"]
+  D --> E["Numbered steps"]
+  E --> F["Expected results"]
+  F --> G["Validation"]
+  G --> H["Rollback + escalation"]
+  H --> I["References + revision"]
+~~~
 
-Document state is a human declaration; the repository does not automatically enforce approvals. Store ticket and test evidence **references only**, not credentials, incident payloads, customer identifiers, or unredacted logs.
+Every operational step specifies **execution context**, **read-only or change**, **exact command**, **expected result**, **interpretation**, and **stop/next action**. For incidents, classify **PROVEN HEALTHY / PROVEN BROKEN / INFERENCE / HYPOTHESIS / UNKNOWN** and document the **first proven failure boundary**. For maintenance, identify ownership and authority, impact, stop condition, rollback, and validation of the original transaction.
 
-## Before any production change
+> [!TIP]
+> Start with the [operations worked example](operations/EXAMPLE.md) to see how a realistic filled-in SOP is structured. All sample output is explicitly **SIMULATED**, never presented as live cluster evidence.
 
-1. Capture the original failed or maintenance transaction; identify current versus incident-time observations.
-2. Identify the authoritative Operator CR, GitOps/Argo CD application, Helm release, or other controller before editing anything.
-3. Mark each evidence item **PROVEN HEALTHY**, **PROVEN BROKEN**, **INFERENCE**, **HYPOTHESIS**, or **UNKNOWN**.
-4. Locate the **first proven failure boundary**; do not claim an unproven root cause.
-5. Approve a minimal change with blast radius, rollback, stop conditions, and a validation of the **original transaction**.
-6. Attach redacted evidence and record the observed result. No default restarts, pod deletion, host reboots, or blind failovers.
+**Status lifecycle:** DRAFT → REVIEWED → APPROVED → DEPRECATED. Approval requires an identified owner, target release, evidence and organizational sign-off. Markdown labels alone **do not** enforce an approval workflow. Follow [CONTRIBUTING.md](CONTRIBUTING.md).
 
-## Propose improvements
-
-Open a GitHub issue or pull request with the observed gap, environment/release applicability, supporting evidence, proposed change, risk, test plan and documentation sources. Link it from [IMPROVEMENTS.md](IMPROVEMENTS.md); do not silently edit an approved SOP.
-
-All commands are **illustrative until target-cluster validated**. See [Red Hat sources](../docs/official-sources.md).
+Reference library: [21 RHOSO command sections](../docs/00-usage-and-conventions.md).
