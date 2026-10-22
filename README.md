@@ -10,7 +10,7 @@ RabbitMQ, HA, forensic troubleshooting, planned maintenance, and recovery.
 
 ## Start here
 
-**[SOP catalogue and update instructions](SOP/README.md)** · [SOP template](SOP/TEMPLATE.md) · [MkDocs Material documentation](https://squidfunk.github.io/mkdocs-material/)
+**[L1/L2/L3 START HERE](SOP/START-HERE.md)** · [Release gate: NO-GO until approved](SOP/RELEASE-GATE.md) · [SOP catalogue](SOP/README.md) · [SOP template](SOP/TEMPLATE.md) · [MkDocs Material documentation](https://squidfunk.github.io/mkdocs-material/)
 
 
 - [Standard Operating Procedures (SOP) and improvement proposals](SOP/README.md)
