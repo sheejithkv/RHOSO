@@ -68,8 +68,8 @@ Classify observations as **PROVEN HEALTHY**, **PROVEN BROKEN**, **INFERENCE**, *
 ## 10. References
 
 - [Primary SOP](./compute-host-maintenance.md)
-- [RHOSO command contexts and caveats](../../docs/00-usage-and-conventions.md)
-- [Official Red Hat sources](../../docs/official-sources.md)
+- [RHOSO command contexts and caveats](https://github.com/sheejithkv/RHOSO/blob/main/docs/00-usage-and-conventions.md)
+- [Official Red Hat sources](https://github.com/sheejithkv/RHOSO/blob/main/docs/official-sources.md)
 
 ## 11. Revision history
 

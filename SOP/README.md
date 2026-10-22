@@ -1,60 +1,49 @@
-# RHOSO 18.x · Standard Operating Procedures
+# RHOSO 18.x — Standard Operating Procedures
 
-> [!IMPORTANT]
-> These are **engineer-facing, versioned SOPs**, not a script to execute from top to bottom. The current procedures and worked examples are **DRAFT** and have **not** been approved or tested against a production RHOSO environment. Validate commands against your release, service layout and organizational change process.
+> [!WARNING]
+> **DRAFT / engineering reference.** The procedures have not been validated against a live RHOSO installation. Confirm your RHOSO micro-release, actual topology, authorization, and change-control requirements before use.
 
-## Maintaining and updating SOPs
+**One source of truth:** every SOP is maintained as a Markdown file in this directory. The searchable, navigable website is generated from these files by MkDocs Material. **There are no separate HTML SOPs to edit.**
 
-**[Start here: exact SOP update and release guide](MAINTAINING-SOPS.md)** — edit an existing SOP, add a new one, update examples, synchronize the two styled HTML copies, validate, review and merge. **Markdown and the visual HTML are not automatically synchronized.**
+## SOP catalogue
 
-## Visual SOP layout — open the styled version
+| Area | Procedure | Worked example |
+| :--- | :--- | :--- |
+| Operations | [SOP-OPS-001 — Daily RHOSO health check](operations/daily-health-check.md) | [Example](operations/EXAMPLE.md) |
+| Incidents | [SOP-INC-001 — VM stuck in BUILD / ERROR](incidents/vm-build-failure.md) | [Example](incidents/EXAMPLE.md) |
+| Maintenance | [SOP-MNT-001 — Compute host maintenance](maintenance/compute-host-maintenance.md) | [Example](maintenance/EXAMPLE.md) |
+| Recovery | [SOP-REC-001 — Backup readiness](recovery/backup-readiness.md) | [Example](recovery/EXAMPLE.md) |
 
-![SOP visual design overview](visual/sop-preview.svg)
+## How to update an SOP
 
-**[Download / open the styled SOP interface](visual/index.html)** · [Viewing instructions and validation](visual/README.md)
+1. Open its Markdown file above and select **Edit** (or edit locally on a new Git branch).
+2. Update the commands, execution context, expected results, validation, rollback, version and references. Keep the first proven failure boundary explicit in incident procedures.
+3. If the walkthrough changes, edit its linked **EXAMPLE.md**. Clearly distinguish simulated data from observed production evidence.
+4. Update [CHANGELOG.md](CHANGELOG.md), open a pull request, and verify the automated **MkDocs build** succeeds.
+5. After technical review, merge to `main`. GitHub Actions automatically rebuilds and publishes the site to the `gh-pages` branch. A one-time GitHub Pages setting must select **Deploy from a branch → gh-pages / (root)** for the public site to become available.
 
-> [!NOTE]
-> The GitHub file viewer shows HTML **source**. To see the designed interface matching the proposal, download `visual/index.html` using **Raw / Download raw file** and open it locally in your browser. A copy at `docs/sop/index.html` is Pages-ready, but GitHub Pages hosting is not enabled or verified. The SVG above is a schematic preview, not a screenshot of a live RHOSO system.
+To **add** an SOP, copy [TEMPLATE.md](TEMPLATE.md) to the appropriate category, give it a unique ID, link an example, add a link to this catalogue, and register it in the `nav` section of the root `mkdocs.yml`.
 
-## Operations library
+## Publishing and local preview
 
-| Area | Primary operating procedure | Worked engineer example | Purpose |
-| :--- | :--- | :--- | :--- |
-| **Operations** | [SOP-OPS-001 — Daily health check](operations/daily-health-check.md) | [Example: daily shift verification](operations/EXAMPLE.md) | Discover, run, classify, escalate |
-| **Incidents** | [SOP-INC-001 — VM BUILD/ERROR](incidents/vm-build-failure.md) | [Example: Nova scheduler boundary](incidents/EXAMPLE.md) | Follow the request across services |
-| **Maintenance** | [SOP-MNT-001 — Compute host](maintenance/compute-host-maintenance.md) | [Example: controlled host drain](maintenance/EXAMPLE.md) | Approve, disable, migrate, verify |
-| **Recovery** | [SOP-REC-001 — Backup readiness](recovery/backup-readiness.md) | [Example: review recovery readiness](recovery/EXAMPLE.md) | Check backup evidence; do not assume recoverability |
+~~~bash
+# Run from the repository root in an isolated Python environment.
+python -m pip install -r requirements-docs.txt
+mkdocs serve
+# Open http://127.0.0.1:8000/
 
-## Standard authoring system
-
-| Resource | Use |
-| :--- | :--- |
-| [Maintenance and update instructions](MAINTAINING-SOPS.md) | Exact authoring, visual-sync, testing and PR procedure |
-| [SOP template](TEMPLATE.md) | Document-control panel; numbered sections; step/command/expected/interpretation layout |
-| [Contribution and approval rules](CONTRIBUTING.md) | Author, review, evidence, release, deprecation |
-| [Improvement backlog](IMPROVEMENTS.md) | Prioritized proposed controls and future SOPs |
-| [Revision history](CHANGELOG.md) | Audit trail for document changes |
-| [Red Hat references](../docs/official-sources.md) | Verify against the target RHOSO release |
-
-### Standard 11-part SOP anatomy
-
-~~~mermaid
-flowchart LR
-  A["Title + metadata"] --> B["Purpose + scope"]
-  B --> C["Access + risk gate"]
-  C --> D["Decision path"]
-  D --> E["Numbered steps"]
-  E --> F["Expected results"]
-  F --> G["Validation"]
-  G --> H["Rollback + escalation"]
-  H --> I["References + revision"]
+# Production site build; fails on documentation warnings.
+mkdocs build --strict
 ~~~
 
-Every operational step specifies **execution context**, **read-only or change**, **exact command**, **expected result**, **interpretation**, and **stop/next action**. For incidents, classify **PROVEN HEALTHY / PROVEN BROKEN / INFERENCE / HYPOTHESIS / UNKNOWN** and document the **first proven failure boundary**. For maintenance, identify ownership and authority, impact, stop condition, rollback, and validation of the original transaction.
+The expected Pages address is **https://sheejithkv.github.io/RHOSO/** after Pages is configured and its deployment succeeds. The site is public: do not commit production credentials, customer data, private IP inventory or unredacted incident logs.
 
-> [!TIP]
-> Start with the [operations worked example](operations/EXAMPLE.md) to see how a realistic filled-in SOP is structured. All sample output is explicitly **SIMULATED**, never presented as live cluster evidence.
+## Engineering standard
 
-**Status lifecycle:** DRAFT → REVIEWED → APPROVED → DEPRECATED. Approval requires an identified owner, target release, evidence and organizational sign-off. Markdown labels alone **do not** enforce an approval workflow. Follow [CONTRIBUTING.md](CONTRIBUTING.md).
+- **[SOP template](TEMPLATE.md)** — consistent purpose, prerequisites, risk, numbered steps, expected results, validation, rollback and revision history.
+- **[Contributing and approval rules](CONTRIBUTING.md)** — scope, evidence and release review.
+- **[Improvement backlog](IMPROVEMENTS.md)** — proposals and technical debt.
+- **[Revision history](CHANGELOG.md)** — tracked SOP changes.
+- [RHOSO administration command reference](https://github.com/sheejithkv/RHOSO/tree/main/docs) — separate command catalogue.
 
-Reference library: [21 RHOSO command sections](../docs/00-usage-and-conventions.md).
+The website is a *presentation* of the Markdown SOPs, not a separate authorization or source of truth. A green documentation build **does not** prove a RHOSO command is safe or correct in your cluster.

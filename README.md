@@ -10,7 +10,7 @@ RabbitMQ, HA, forensic troubleshooting, planned maintenance, and recovery.
 
 ## Start here
 
-**[How to update an SOP](SOP/MAINTAINING-SOPS.md)** · [Visual SOP design preview and viewer instructions](SOP/visual/README.md) · [SOP catalogue](SOP/README.md)
+**[SOP catalogue and update instructions](SOP/README.md)** · [SOP template](SOP/TEMPLATE.md) · [MkDocs Material documentation](https://squidfunk.github.io/mkdocs-material/)
 
 
 - [Standard Operating Procedures (SOP) and improvement proposals](SOP/README.md)
@@ -22,7 +22,7 @@ RabbitMQ, HA, forensic troubleshooting, planned maintenance, and recovery.
 
 ## Standard operating procedures
 
-The [SOP directory](SOP/README.md) provides a [standard procedure template](SOP/TEMPLATE.md), [contribution/review process](SOP/CONTRIBUTING.md), four **DRAFT** operational procedures and a [prioritized improvement backlog](SOP/IMPROVEMENTS.md). Procedures remain unapproved for production until tested and signed off for the deployed RHOSO version and topology. SOP changes use an accompanying [PR checklist](.github/PULL_REQUEST_TEMPLATE/sop-change.md).
+The [SOP directory](SOP/README.md) provides a [standard procedure template](SOP/TEMPLATE.md), [contribution/review process](SOP/CONTRIBUTING.md), four **DRAFT** operational procedures and a [prioritized improvement backlog](SOP/IMPROVEMENTS.md). SOP Markdown is the single source of truth; a MkDocs Material website is built automatically from it on pull requests and published to `gh-pages` after merge. GitHub Pages must be enabled once under repository Settings → Pages, selecting `gh-pages` / root. Procedures remain unapproved for production until tested and signed off for the deployed RHOSO version and topology. SOP changes use an accompanying [PR checklist](.github/PULL_REQUEST_TEMPLATE/sop-change.md).
 
 ## Administration reference — 21 sections
 
@@ -85,13 +85,15 @@ These outcomes are not equivalent to end-to-end RHOSO transaction validation.
 ```text
 RHOSO/
 ├── README.md
-├── SOP/                           # Versioned operating procedures and improvement backlog
+├── SOP/                           # Sole maintained SOP Markdown source
+├── mkdocs.yml                     # Navigation, layout and website configuration
+├── requirements-docs.txt          # Pinned MkDocs build dependencies
 ├── docs/                          # 21 numbered Markdown reference sections
 │   ├── 00-usage-and-conventions.md
 │   └── official-sources.md
 ├── scripts/rhoso-healthcheck.sh   # Executable, read-only health check
 ├── source/                        # Unmodified original deliverables
-└── .github/workflows/validate.yml # Bash syntax and documentation checks
+└── .github/workflows/validate.yml # Syntax, documentation build and gh-pages publish
 ```
 
 **Source reference preparation date:** 2026-10-20. **SOP scaffold date:** 2026-10-20. Check installed RHOSO minor/micro versions,

@@ -122,7 +122,7 @@ oc logs -n "$RHOSO_NAMESPACE" "$NOVA_POD" -c "$NOVA_CONTAINER" --timestamps --si
 ## Fault-domain-specific next action
 
 - Scheduler rejection: collect scheduler error and Placement provider inventory/traits/allocations; inspect requested flavor, AZ and aggregates.
-- Compute unregistered/down: compare service list, hypervisors, cell host mappings (use discovered Nova conductor as described in [Nova reference](../../docs/05-nova-cells-compute-placement.md)) and EDPM nova-compute service logs.
+- Compute unregistered/down: compare service list, hypervisors, cell host mappings (use discovered Nova conductor as described in [Nova reference](https://github.com/sheejithkv/RHOSO/blob/main/docs/05-nova-cells-compute-placement.md)) and EDPM nova-compute service logs.
 - Port binding/DHCP: inspect the instance port and Neutron API errors; then OVN NB/SB binding and affected chassis, not the entire network stack by default.
 - Image or volume error: trace matching Glance/Cinder request and backend logs before involving Ceph.
 
@@ -144,8 +144,8 @@ Classify evidence into **PROVEN HEALTHY**, **PROVEN BROKEN**, **INFERENCE**, **H
 
 ## 10. References
 
-- [RHOSO 18.x admin command reference](../../docs/00-usage-and-conventions.md)
-- [Official Red Hat sources](../../docs/official-sources.md)
+- [RHOSO 18.x admin command reference](https://github.com/sheejithkv/RHOSO/blob/main/docs/00-usage-and-conventions.md)
+- [Official Red Hat sources](https://github.com/sheejithkv/RHOSO/blob/main/docs/official-sources.md)
 - [Worked example for this area](EXAMPLE.md) (**SIMULATED**, not observed)
 
 ## 11. Revision history

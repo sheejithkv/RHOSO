@@ -117,8 +117,8 @@ Escalation: [team, incident bridge, ticket]. Provide a *redacted*, timestamped s
 ## 10. References
 
 - [RHOSO 18.0 official documentation](https://docs.redhat.com/en/documentation/red_hat_openstack_services_on_openshift/18.0)
-- [Repository execution contexts](../docs/00-usage-and-conventions.md)
-- [Worked example](./EXAMPLE.md) — update to the correct category path.
+- [Repository execution contexts](https://github.com/sheejithkv/RHOSO/blob/main/docs/00-usage-and-conventions.md)
+- [Worked example](operations/EXAMPLE.md) — replace with the example link for your SOP's category.
 
 ## 11. Revision history
 

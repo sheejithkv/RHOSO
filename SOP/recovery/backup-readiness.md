@@ -114,7 +114,7 @@ oc get volumesnapshots.snapshot.storage.k8s.io -A
 
 Do not generate or run restore/delete commands as part of this SOP. If release support, storage integrity, restore isolation, backup freshness or authoritative configuration is unknown, mark **UNAVAILABLE/WARN** and escalate to the DR owner. Follow release-specific Red Hat restore documentation and a separately approved, exercised DR plan.
 
-References: [RHOSO administration documentation](../../docs/official-sources.md) and [recovery command reference](../../docs/18-backup-disaster-recovery.md).
+References: [RHOSO administration documentation](https://github.com/sheejithkv/RHOSO/blob/main/docs/official-sources.md) and [recovery command reference](https://github.com/sheejithkv/RHOSO/blob/main/docs/18-backup-disaster-recovery.md).
 
 ## 7. Validation
 
@@ -130,8 +130,8 @@ Classify evidence into **PROVEN HEALTHY**, **PROVEN BROKEN**, **INFERENCE**, **H
 
 ## 10. References
 
-- [RHOSO 18.x admin command reference](../../docs/00-usage-and-conventions.md)
-- [Official Red Hat sources](../../docs/official-sources.md)
+- [RHOSO 18.x admin command reference](https://github.com/sheejithkv/RHOSO/blob/main/docs/00-usage-and-conventions.md)
+- [Official Red Hat sources](https://github.com/sheejithkv/RHOSO/blob/main/docs/official-sources.md)
 - [Worked example for this area](EXAMPLE.md) (**SIMULATED**, not observed)
 
 ## 11. Revision history
