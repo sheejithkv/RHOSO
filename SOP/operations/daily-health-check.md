@@ -1,138 +1,114 @@
-# SOP-OPS-001 · Daily RHOSO Operational Health Check
+# SOP-OPS-001 — Daily RHOSO operational review
 
-> [!WARNING]
-> **DRAFT — NOT APPROVED FOR LIVE PRODUCTION.** Release-dependent commands require target-environment verification. **No production execution has been performed.**
+!!! warning "DRAFT — engineering review only"
+    **Not approved for production execution.** No site validation or named approver has been recorded. Confirm installed RHOSO micro-release, CR ownership, privileges, optional services and actual workload constraints. Follow [release gates](../RELEASE-GATE.md).
 
-| Document control | Value | Document control | Value |
-| :--- | :--- | :--- | :--- |
-| **SOP ID** | SOP-OPS-001 | **Version** | 0.2.0 |
-| **Status** | DRAFT | **Type** | operations |
-| **Release** | RHOSO 18.x (micro-release unverified) | **Owner / Approver** | Not assigned |
-| **Last live validation** | Not performed | **Execution** | [OCP] / [OS] as marked |
-| **Change reference** | Required for any write | **Authoritative owner** | Discover Operator / GitOps / Helm |
+| Control | Value | Control | Value |
+| --- | --- | --- | --- |
+| SOP | SOP-OPS-001 | Version | 0.3.0 |
+| Status | **DRAFT** | Intended audience | L1 investigation; L2/L3 escalation |
+| RHOSO applicability | **18.x — exact micro-release UNKNOWN** | Owner / approver | **Unassigned / unassigned** |
+| Last live validation | **NOT PERFORMED** | Risk | Read-only to cluster; local output can be sensitive |
+| Primary fault domain | OpenShift / RHOSO / EDPM / OpenStack API | Change record | Not required |
 
-**Quick navigation:** [Purpose](#1-purpose) · [Scope](#2-scope) · [Prerequisites](#3-prerequisites) · [Risks](#4-impact-and-risks) · [Flow](#5-decision-path) · [Steps](#6-detailed-procedure) · [Validation](#7-validation) · [Rollback](#8-rollback--recovery) · [Troubleshooting](#9-troubleshooting-and-escalation) · [References](#10-references) · [History](#11-revision-history)
+## 1. Purpose and acceptance
 
-## 1. Purpose
+Determine the observed state of a selected RHOSO cloud without modifying infrastructure. The check is a **screening collector**, not an end-to-end tenant transaction.
 
-Determine whether implemented OpenShift/RHOSO checks pass, fail or cannot be executed.
+**Acceptance:** Timestamped PASS/WARN/FAIL/UNAVAILABLE/SKIP results with faults assigned for follow-up. Any incident is validated by reproducing its original transaction.
 
-**Expected operational outcome:** Timestamped report plus explicitly classified failures/unavailable checks; a separate end-to-end transaction test is required to prove workload health.
+## 2. Scope and execution contexts
 
-## 2. Scope
+Cluster and RHOSO CR/API inventory only for services implemented in the chosen namespace. Optional services may legitimately be absent; do not force deployment assumptions.
 
-RHOSO 18.x only with deployed, supported components. Reference names and namespaces are **not** assumed. See the site-specific support matrix before performing changes.
+- **[OCP]** authenticated OpenShift administration workstation.
+- **[OS]** authenticated, discovered OpenStackClient pod.
+- **[EDPM]** approved RHEL data-plane host.
+- **[POD]** discovered container in its actual namespace.
 
-## 3. Prerequisites
+## 3. Prerequisites and authorization
 
-Authenticated [OCP] OpenShift workstation and discovered [OS] OpenStackClient when needed; least-privilege credentials; correct cloud/project/region/host; incident or approved change ticket; known authoritative owner.
+- Authenticate using the approved OpenShift identity provider; verify `oc whoami`.
+- Have `oc`, `jq`, Bash and rights to inspect RHOSO CRs; only approved pod exec for OpenStack API checks.
+- Discover the intended RHOSO namespace. If more than one control plane exists, choose one deliberately.
+- Use a private workstation with restricted local output storage.
 
-## 4. Impact and risks
+## 4. Impact, risk and stop conditions
 
-> [!CAUTION]
-> Read-only against infrastructure; local outputs can contain sensitive topology. Do not publish raw reports. **STOP** if the original transaction, command context, controller ownership, prerequisites or rollback capability is unknown.
+!!! danger "STOP"
+    Do not restart pods, edit CRs, or delete local evidence. Treat UNAVAILABLE as **not checked**, never healthy; SKIP means no applicable installed service was detected. The collector does not certify Galera synchronization or tenant end-to-end functionality.
 
 ## 5. Decision path
 
 ```mermaid
 flowchart TD
-  A["Identify scope, transaction and timestamp"] --> B["Run read-only discovery"]
-  B --> C{"Proven failure or objective verified?"}
-  C -- No --> D["Record UNKNOWN and escalate"]
-  C -- Yes --> E{"Mutation required?"}
-  E -- Yes --> F["Validate owner, approval, risk and rollback"]
-  F --> G["Controlled change only"]
-  E -- No --> H["Record observations"]
-  G --> I["Reproduce original transaction"]
-  H --> I
-  I --> J["Document result and handover"]
+A["Authenticate and choose cloud"] --> B["Read-only health collector"]
+B --> C{"FAIL or WARN?"}
+C -- "Yes" --> D["Classify first proven boundary and escalate"]
+C -- "No" --> E{"UNAVAILABLE / missing checks?"}
+E -- "Yes" --> F["Record unknown coverage; assign verification"]
+E -- "No" --> G["Record checks passed; synthetic tenant test separately"]
 ```
 
-## 6. Detailed procedure
+## 6. Procedure
 
-| Step | Description | Exact command and context | Expected result | Interpretation / stop |
-| :--- | :--- | :--- | :--- | :--- |
-| 1 | Discover cloud scope | `[OCP] oc get openstackcontrolplanes -A` | Correct namespace and CR identified | Stop for ambiguous deployment |
-| 2 | Verify script syntax | `[OCP] bash -n scripts/rhoso-healthcheck.sh` | Exit code 0 | Syntax only, not live proof |
-| 3 | Run read-only collector | `[OCP] RHOSO_NAMESPACE="<discovered-namespace>" bash scripts/rhoso-healthcheck.sh` | Timestamped PASS/WARN/FAIL/UNAVAILABLE report | Investigate per check; do not auto-repair |
+**Step 1 — Discover scope [OCP, read-only].**
 
-> [!NOTE]
-> Run commands **individually in their stated execution context**. Substitute real discovered values. The matrix above is a reference; do not execute a table directly.
-
-### Full procedure and environment discovery
-
-| Field | Value |
-| --- | --- |
-| Status / version | DRAFT / 0.1.0 |
-| Scope | RHOSO 18.x control plane, OpenShift, EDPM, enabled OpenStack services |
-| Execution | [OCP] admin workstation; [OS] OpenStackClient via script |
-| Owner / approver | To be assigned |
-| Last site validation | Not performed |
-
-## Transaction and acceptance
-
-Purpose: determine whether each **implemented** read-only check succeeds; identify failed or unavailable checks and dispatch targeted investigation. This is **not** a synthetic tenant transaction test and cannot prove end-to-end health by itself.
-
-## Prerequisites and discovery
-
-- Authenticated oc session, jq, permissions to list relevant CRs/pods and exec into the intended OpenStackClient; service-specific components may not be deployed.
-- Select the appropriate RHOSO namespace and cloud when multiple exist. Do not guess names.
-- Report output is local and can expose topology; store under restricted access, never commit it.
-
-~~~bash
-# [OCP][RO] Validate CLI identity and control-plane discovery.
+```bash
 oc whoami
 oc get openstackcontrolplanes -A
 oc get openstackdataplanenodesets -A
 oc get openstackdataplanedeployments -A
+```
 
-# [OCP][RO] Discover an authenticated client pod and its namespace.
-oc get pods -A -o wide | grep -i openstackclient
+**Expected:** One or more real RHOSO instances are identified. **STOP** if the target namespace is ambiguous or inaccessible.
 
-# [OCP][RO] Validate health-check script syntax; no cluster changes.
+**Step 2 — Verify and execute the read-only collector [OCP].** Run from the checked-out repository root.
+
+```bash
 bash -n scripts/rhoso-healthcheck.sh
+RHOSO_NAMESPACE="<discovered-rhoso-namespace>" bash scripts/rhoso-healthcheck.sh
+```
 
-# [OCP][RO] Execute; replace with the namespace discovered above.
-RHOSO_NAMESPACE="<discovered-namespace>" bash scripts/rhoso-healthcheck.sh
-~~~
+**Expected:** a timestamped, locally restricted report folder and summary. Syntax check exit 0 **only proves Bash syntax**.
 
-## Interpret and triage
+**Step 3 — Interpret each result.**
 
-- **PASS**: implemented check passed at collection time; confirm real user/API transaction separately when incident-driven.
-- **WARN**: degraded condition or warning; correlate timestamps and owner.
-- **FAIL**: independently confirmed check failure; capture first proven failing boundary and incident request ID.
-- **UNAVAILABLE**: check could not be completed (RBAC, absent optional component, unavailable CLI/context). Do **not** conflate with either healthy or failed.
-- Exit 0 = checks pass, 1 = warnings/unavailable, 2 = failures/prerequisite failure, per current script implementation.
+| Status | Meaning | L1 action |
+| --- | --- | --- |
+| PASS | The explicitly implemented invariant passed at this time | Record scope and timestamp; not E2E proof |
+| WARN | Degraded, incomplete, or potential issue | Open ticket with evidence and owning team |
+| FAIL | A failure of a defined invariant was observed | Escalate with first proven boundary |
+| UNAVAILABLE | The check could not establish a state | Escalate verification gap; do not assume healthy |
+| SKIP | The optional check was not applicable | Record absence and deployment baseline |
 
-Capture the script's generated report path, timestamp, precise scope, failed commands, output redaction status, and ticket reference. Correlate with **original user-visible transaction**, not only a pod list.
+**Step 4 — Reproduce the actual reported failing transaction** using a separately approved read-only API call or safe synthetic test; a green Kubernetes object is not sufficient.
 
-## Handover and change safety
+## 7. Validation and completion
 
-No automatic restarts, pod deletion, failover, CR edits, or recovery. Route abnormal results to the service owner. Follow the relevant incident SOP for the first proven failure. Record gaps as issues and link [IMPROVEMENTS.md](../IMPROVEMENTS.md).
+Capture the report path, UTC timestamp, selected cloud namespace and any unverified checks. Confirm that any reported application problem is reproduced from the authorized client. **The script is not proof of full cloud availability.**
 
-**Completion:** archived redacted summary, assigned follow-ups, and confirmation whether an end-to-end test has or has not been performed.
+## 8. Rollback / restoration
 
-## 7. Validation
+No infrastructure modification; no rollback. Follow approved local evidence retention for report files.
 
-Timestamped report plus explicitly classified failures/unavailable checks; a separate end-to-end transaction test is required to prove workload health. Record observed values, timestamp, request/VM/host reference, and explicit PASS / FAIL / UNAVAILABLE; a healthy Kubernetes object is not an end-to-end test.
+## 9. Evidence and escalation
 
-## 8. Rollback / recovery
+**PROVEN HEALTHY:** checks with exact predicates satisfied. **PROVEN BROKEN:** failed predicate and timestamp. **INFERENCE:** possible effects on users. **HYPOTHESIS:** candidate cause, unproven. **UNKNOWN:** missing API, credentials, log or test. Provide a redacted summary rather than uploading raw output.
 
-No infrastructure mutation; no rollback required. Remove only local reports under approved retention procedure.
-
-## 9. Troubleshooting and escalation
-
-Classify evidence into **PROVEN HEALTHY**, **PROVEN BROKEN**, **INFERENCE**, **HYPOTHESIS**, and **UNKNOWN**. Record the first proven boundary; do not infer trigger/root cause from labels without logs.
+Use [L1–L3 ownership and escalation](../START-HERE.md). Record incident-time and current-time evidence separately. A user-facing failure is not automatically proof of the ticket's assumed fault domain.
 
 ## 10. References
 
-- [RHOSO 18.x admin command reference](https://github.com/sheejithkv/RHOSO/blob/main/docs/00-usage-and-conventions.md)
-- [Official Red Hat sources](https://github.com/sheejithkv/RHOSO/blob/main/docs/official-sources.md)
-- [Worked example for this area](EXAMPLE.md) (**SIMULATED**, not observed)
+- [RHOSO official documentation](https://docs.redhat.com/en/documentation/red_hat_openstack_services_on_openshift/18.0)
+- [RHOSO repository command reference](https://github.com/sheejithkv/RHOSO/tree/main/docs)
+- [Worked operations example](EXAMPLE.md) — **SIMULATED**, not live evidence
+- [Compatibility register](../COMPATIBILITY.md)
 
 ## 11. Revision history
 
 | Version | Date (UTC) | Change | Site verification |
-| :--- | :--- | :--- | :--- |
-| 0.1.0 | 2026-10-20 | Starter draft | Not performed |
-| 0.2.0 | 2026-10-21 | Visual SOP metadata, step/expected matrices and example links | Not performed |
+| --- | --- | --- | --- |
+| 0.1.0 | 2026-10-20 | Initial draft | Not performed |
+| 0.2.0 | 2026-10-21 | Structure and examples | Not performed |
+| 0.3.0 | 2026-10-22 | Consolidated single procedure, role gates and verification criteria | Not performed |

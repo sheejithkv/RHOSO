@@ -50,6 +50,9 @@ extra_css:
   - stylesheets/extra.css
 nav:
   - Home: README.md
+  - Engineer start here: START-HERE.md
+  - Production release gate: RELEASE-GATE.md
+  - Platform compatibility: COMPATIBILITY.md
   - Operations:
       - Daily health check: operations/daily-health-check.md
       - Worked example: operations/EXAMPLE.md

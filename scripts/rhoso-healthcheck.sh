@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# RHOSO 18.x read-only daily health check, 2026-10-20.
+# RHOSO 18.x read-only daily health check, reviewed 2026-10-22.
 # Infrastructure operations: oc get / oc exec (read-only CLI) ONLY.
 # Requires oc and jq. Optional RHOSO_NAMESPACE selects among multiple clouds.
 # Status semantics: PASS = validated response + expected invariant; WARN = risk;
-# FAIL = observed failed invariant; UNAVAILABLE = check cannot run or be proven.
+# FAIL = observed failed invariant; UNAVAILABLE = check cannot run or be proven; SKIP = not installed/applicable.
 # Files are local-only and mode 0600; report directory is mode 0700.
 set -uo pipefail
 umask 077
@@ -47,9 +47,13 @@ if run version oc get clusterversion -o json; then
   else record WARN oc-version 'ClusterVersion Available not True or condition missing'; fi
 else record UNAVAILABLE oc-version 'ClusterVersion unavailable'; fi
 if run operators oc get clusteroperators -o json; then
-  if js operators '(.items|length)>0 and ([.items[] | select(any(.status.conditions[]?; .type=="Degraded" and .status=="True") or (any(.status.conditions[]?; .type=="Available" and .status=="False")))] | length == 0)'; then
-    record PASS clusteroperators 'no explicit Degraded=True or Available=False condition'
-  else record FAIL clusteroperators 'one or more degraded/unavailable operators'; fi
+  if js operators '(.items|length)>0 and any(.items[]; any(.status.conditions[]?; (.type=="Degraded" and .status=="True") or (.type=="Available" and .status=="False")))'; then
+    record FAIL clusteroperators 'at least one Operator Degraded=True or Available=False'
+  elif js operators '(.items|length)>0 and all(.items[]; (any(.status.conditions[]?; .type=="Available" and .status=="True")) and (any(.status.conditions[]?; .type=="Degraded" and .status=="False")) and (any(.status.conditions[]?; .type=="Progressing" and .status=="False")))'; then
+    record PASS clusteroperators 'all discovered Operators Available=True, Degraded=False and Progressing=False'
+  else
+    record WARN clusteroperators 'Operator conditions missing, unknown, progressing or no Operators returned; review operators.out'
+  fi
 else record UNAVAILABLE clusteroperators 'cannot read ClusterOperators'; fi
 if run nodes oc get nodes -o json; then
   if js nodes '(.items|length)>0 and all(.items[]; any(.status.conditions[]?; .type=="Ready" and .status=="True"))'; then
@@ -135,7 +139,11 @@ if [[ -n "$NS" ]]; then
       record PASS galera-operator 'all Galera CRs Ready=True (NOT proof wsrep synced)'
     elif js galeras '(.items|length)==0'; then record UNAVAILABLE galera-operator 'no Galera CR'
     else record WARN galera-operator 'CR readiness not established'; fi
-    record UNAVAILABLE galera-wsrep 'SQL wsrep checks need authorized interactive DBA credentials; never expose secrets'
+    if js galeras '(.items|length)==0'; then
+      record SKIP galera-wsrep 'no Galera resources in selected namespace; SQL check not applicable here'
+    else
+      record UNAVAILABLE galera-wsrep 'SQL synchronization NOT VERIFIED: requires site-approved credential-free read-only DBA execution method; never infer wsrep from CR Ready'
+    fi
   else record UNAVAILABLE galera-operator 'Galera CR unavailable'; fi
 
   # OVN DB inspection inside discovered RHOSO database pods.
@@ -216,17 +224,11 @@ if [[ -n "$NS" ]]; then
     nc=$(jq -r --arg p "$np" '[.items[]|select(.metadata.name==$p)|.spec.containers[0].name][0]//empty' "$OUTDIR/namespacepods.out")
     if [[ -n "$np" && -n "$nc" ]]; then
       if run cells oc exec -n "$NS" "$np" -c "$nc" -- nova-manage cell_v2 list_hosts; then
-        if [[ -f "$OUTDIR/computes.out" ]]; then
-          missing=0; mapped=0
-          while IFS= read -r compute; do
-            [[ -z "$compute" ]] && continue
-            mapped=$((mapped+1))
-            grep -Fq -- "$compute" "$OUTDIR/cells.out" || missing=$((missing+1))
-          done < <(jq -r '.[] | select((.Binary//.binary)=="nova-compute") | .Host // .host // empty' "$OUTDIR/computes.out")
-          if ((mapped > 0 && missing == 0)); then
-            record PASS nova-cells "all $mapped Nova compute service host names found in cell host mappings"
-          else record WARN nova-cells "missing mappings=$missing; mapped compute services=$mapped; verify each cell"; fi
-        else record WARN nova-cells 'host mappings accessible but compute service comparison unavailable'; fi
+        if [[ -s "$OUTDIR/cells.out" ]]; then
+          record WARN nova-cells 'list_hosts returned data; exact host-to-cell reconciliation NOT VERIFIED by this collector; inspect cells.out per cell'
+        else
+          record WARN nova-cells 'list_hosts returned empty output; check conductor context and Nova cell configuration'
+        fi
       else record UNAVAILABLE nova-cells 'nova-manage tool/container/permissions inaccessible'; fi
     else record UNAVAILABLE nova-cells 'running conductor pod not discovered'; fi
   else record UNAVAILABLE nova-cells 'pod inventory inaccessible'; fi
@@ -242,7 +244,7 @@ if run events oc get events -A -o json; then
 else record UNAVAILABLE recent-events 'cluster event API unavailable'; fi
 
 printf '\n# CONSOLIDATED SUMMARY\n'
-for state in PASS WARN FAIL UNAVAILABLE; do
+for state in PASS WARN FAIL UNAVAILABLE SKIP; do
   num=$(awk -F '\t' -v s="$state" '$1==s {n++} END {print n+0}' "$SUMMARY")
   printf '%-11s %d\n' "$state" "$num"
 done

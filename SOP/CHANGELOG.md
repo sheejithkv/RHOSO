@@ -7,3 +7,5 @@
 | 2026-10-22 | Single-source MkDocs documentation | DRAFT | Removed separately edited HTML viewer, mirror, preview and sync instructions; automated site generation from Markdown |
 
 For every new or revised SOP, update its own version, maintainer, target RHOSO micro-release, review status and validation evidence. Git history records complete diffs. A documentation build is not equivalent to operational approval.
+
+| 2026-10-22 | Release hardening: audited health-check conditions, mock contract tests, unified four SOPs, L1-L3 and release gate | DRAFT | CI does not replace target RHOSO test; no production approval |

@@ -1,156 +1,124 @@
-# SOP-INC-001 · Investigate VM Stuck in BUILD / ERROR
+# SOP-INC-001 — VM stuck in BUILD or enters ERROR
 
-> [!WARNING]
-> **DRAFT — NOT APPROVED FOR LIVE PRODUCTION.** Release-dependent commands require target-environment verification. **No production execution has been performed.**
+!!! warning "DRAFT — engineering review only"
+    **Not approved for production execution.** No site validation or named approver has been recorded. Confirm installed RHOSO micro-release, CR ownership, privileges, optional services and actual workload constraints. Follow [release gates](../RELEASE-GATE.md).
 
-| Document control | Value | Document control | Value |
-| :--- | :--- | :--- | :--- |
-| **SOP ID** | SOP-INC-001 | **Version** | 0.2.0 |
-| **Status** | DRAFT | **Type** | incidents |
-| **Release** | RHOSO 18.x (micro-release unverified) | **Owner / Approver** | Not assigned |
-| **Last live validation** | Not performed | **Execution** | [OCP] / [OS] as marked |
-| **Change reference** | Required for any write | **Authoritative owner** | Discover Operator / GitOps / Helm |
+| Control | Value | Control | Value |
+| --- | --- | --- | --- |
+| SOP | SOP-INC-001 | Version | 0.3.0 |
+| Status | **DRAFT** | Intended audience | L1 evidence; L2 Nova/Placement; L3 cross-domain |
+| RHOSO applicability | **18.x — exact micro-release UNKNOWN** | Owner / approver | **Unassigned / unassigned** |
+| Last live validation | **NOT PERFORMED** | Risk | Read-only diagnosis |
+| Primary fault domain | Nova → Placement/Neutron/Glance/Cinder → EDPM | Change record | Not in this SOP |
 
-**Quick navigation:** [Purpose](#1-purpose) · [Scope](#2-scope) · [Prerequisites](#3-prerequisites) · [Risks](#4-impact-and-risks) · [Flow](#5-decision-path) · [Steps](#6-detailed-procedure) · [Validation](#7-validation) · [Rollback](#8-rollback--recovery) · [Troubleshooting](#9-troubleshooting-and-escalation) · [References](#10-references) · [History](#11-revision-history)
+## 1. Purpose and acceptance
 
-## 1. Purpose
+Trace the **specific instance-create transaction** from API acceptance through scheduling, resource claims, networking and guest boot. BUILD/ERROR is a **symptom**, not root-cause evidence.
 
-Trace a particular instance creation request to the first provably failed Nova, Placement, Neutron, Cinder/Glance or EDPM transaction.
+**Acceptance:** Identify the earliest error correlated to the same instance/request ID and UTC incident time. Remediation is in a separately approved fault-domain procedure; validate by reproducing the original server-create transaction.
 
-**Expected operational outcome:** Locate matching request ID, timestamp and first failing subsystem; after an independently approved fix, reproduce the original VM create transaction.
+## 2. Scope and execution contexts
 
-## 2. Scope
+Use OpenStack API and discovered RHOSO/EDPM service logs. Scope to the affected region, project, Nova cell and workload. Optional storage or networking services are investigated only where the transaction implicates them.
 
-RHOSO 18.x only with deployed, supported components. Reference names and namespaces are **not** assumed. See the site-specific support matrix before performing changes.
+- **[OCP]** authenticated OpenShift administration workstation.
+- **[OS]** authenticated, discovered OpenStackClient pod.
+- **[EDPM]** approved RHEL data-plane host.
+- **[POD]** discovered container in its actual namespace.
 
-## 3. Prerequisites
+## 3. Prerequisites and authorization
 
-Authenticated [OCP] OpenShift workstation and discovered [OS] OpenStackClient when needed; least-privilege credentials; correct cloud/project/region/host; incident or approved change ticket; known authoritative owner.
+- Incident ticket with VM UUID, project, region, request ID (if available) and UTC time window.
+- Discover RHOSO namespace and authorized OpenStackClient pod; confirm actual containers before logs.
+- Confirm read-only access to affected Nova, Neutron and Placement APIs; document access gaps.
 
-## 4. Impact and risks
+## 4. Impact, risk and stop conditions
 
-> [!CAUTION]
-> Read-only diagnosis; no retry/delete/rebuild/restart from BUILD or ERROR alone. **STOP** if the original transaction, command context, controller ownership, prerequisites or rollback capability is unknown.
+!!! danger "STOP"
+    No instance retry, rebuild, deletion, live migration, quota change, scheduler restart, or cell discovery based only on BUILD/ERROR. An unproven scheduler assumption must never drive a production change.
 
 ## 5. Decision path
 
 ```mermaid
 flowchart TD
-  A["Identify scope, transaction and timestamp"] --> B["Run read-only discovery"]
-  B --> C{"Proven failure or objective verified?"}
-  C -- No --> D["Record UNKNOWN and escalate"]
-  C -- Yes --> E{"Mutation required?"}
-  E -- Yes --> F["Validate owner, approval, risk and rollback"]
-  F --> G["Controlled change only"]
-  E -- No --> H["Record observations"]
-  G --> I["Reproduce original transaction"]
-  H --> I
-  I --> J["Document result and handover"]
+A["Record exact VM request + time"] --> B["Nova instance details and events"]
+B --> C{"First matched failure?"}
+C -- "No" --> D["Correlate Nova API/scheduler/conductor logs"]
+C -- "Yes" --> E["Classify owning fault domain"]
+D --> E
+E --> F["Read-only targeted Placement/Neutron/storage/EDPM evidence"]
+F --> G["Escalate minimal evidence and reproduction test"]
 ```
 
-## 6. Detailed procedure
+## 6. Procedure
 
-| Step | Description | Exact command and context | Expected result | Interpretation / stop |
-| :--- | :--- | :--- | :--- | :--- |
-| 1 | Identify instance | `[OS] openstack server show "$VM_UUID" -f yaml` | Exact fault/status and instance ID | Status is symptom, not cause |
-| 2 | Read instance events | `[OS] openstack server event list "$VM_UUID"` | Timestamped actions; request linkage if available | Use earliest matching failure |
-| 3 | Inspect service inventory | `[OS] openstack compute service list` | Compute up/down and enabled flags | Not proof of Placement eligibility |
-| 4 | Correlate logs | `[OCP] oc logs -n "$RHOSO_NAMESPACE" "$NOVA_POD" -c "$NOVA_CONTAINER" --timestamps --since=60m` | Matching request ID or instance at incident time | Escalate to first failing fault domain |
+**Step 1 — Discover execution environment [OCP, read-only].**
 
-> [!NOTE]
-> Run commands **individually in their stated execution context**. Substitute real discovered values. The matrix above is a reference; do not execute a table directly.
-
-### Full procedure and environment discovery
-
-| Field | Value |
-| --- | --- |
-| Status / version | DRAFT / 0.1.0 |
-| Scope | RHOSO 18.x; Nova -> Placement -> Neutron -> Cinder/Glance -> EDPM compute |
-| Execution | [OS] authenticated OpenStackClient; [OCP] control-plane shell |
-| Owner / approver | To be assigned |
-| Last site validation | Not performed |
-
-## Transaction boundary
-
-**Original transaction:** tenant requests server creation; Nova returns a server ID, then the instance remains BUILD or reaches ERROR. A successful create API response proves only request acceptance, not scheduling, port binding, image retrieval, block-device mapping, or VM boot.
-
-Record project, region, request ID, instance UUID, client-side timestamp, observed state and which dependency was first to fail. Distinguish incident-time state from current condition.
-
-## Read-only collector
-
-Use discovered, authorized contexts; do not paste multiple contexts into one shell. Variables below must be supplied from ticket/CLI evidence, not guessed.
-
-~~~bash
-# [OCP][RO] Discover RHOSO namespaces and client/service pods.
+```bash
 oc get openstackcontrolplanes -A
-oc get pods -A -o wide | grep -Ei 'openstackclient|nova|placement|neutron|cinder|glance'
+oc get pods -n "$RHOSO_NAMESPACE" -o wide
+oc get pod -n "$RHOSO_NAMESPACE" "$NOVA_POD" -o jsonpath='{.spec.containers[*].name}'
+```
 
-# [OCP][RO] Use the discovered namespace/pod.
-oc rsh -n "$RHOSO_NAMESPACE" "$CLIENT_POD"
+**Expected:** real namespace, Nova scheduler/conductor/API pod name and chosen container are identified; no pod names are invented. Set `RHOSO_NAMESPACE`, `NOVA_POD`, and `NOVA_CONTAINER` from this discovery.
 
-# [OS][RO] Verify cloud identity and the exact failing VM.
-openstack token issue
+**Step 2 — Run OpenStack commands **inside the discovered authenticated OpenStackClient** [OS, read-only]. Use an authorized session, not the OpenShift workstation shell.
+
+```bash
+openstack token issue -f value -c expires
 openstack server show "$VM_UUID" -f yaml
-
-# [OS][RO] Retrieve instance actions and inventory without mutation.
 openstack server event list "$VM_UUID"
-openstack server list --all-projects --long
+openstack port list --server "$VM_UUID"
+openstack server volume list "$VM_UUID"
+```
+
+**Expected:** state, fault details and related resources for the **same VM UUID**. `event list` availability/visibility depends on installed client and RBAC. An API success does not prove guest boot.
+
+**Step 3 — Inspect scheduler and compute eligibility [OS, read-only].**
+
+```bash
 openstack compute service list
 openstack hypervisor stats show
 openstack resource provider list
+```
 
-# [OS][RO] Inspect related Neutron and block storage dependencies.
-openstack port list --server "$VM_UUID"
-openstack server volume list "$VM_UUID"
-openstack image list --long
+**Expected:** service state and capacity inventory. Aggregate capacity alone does not establish eligibility; compare the actual request's flavor, traits, AZ, NUMA and cell mappings.
 
-# [OCP][RO] Discover exact scheduler/conductor pod and its containers.
-oc get pods -n "$RHOSO_NAMESPACE" -o wide
-oc get pod -n "$RHOSO_NAMESPACE" "$NOVA_POD" -o jsonpath='{.spec.containers[*].name}'
+**Step 4 — Correlate logs by exact request and time [OCP, read-only].**
 
-# [OCP][RO] Correlate request ID and timestamp within the discovered container.
+```bash
 oc logs -n "$RHOSO_NAMESPACE" "$NOVA_POD" -c "$NOVA_CONTAINER" --timestamps --since=60m
-~~~
+```
 
-## Evidence classification
+**Expected:** matching instance/request ID at the incident time. Set a different historical collection window if needed; absence of a matching line means UNKNOWN.
 
-- **PROVEN HEALTHY**: exact prior transaction stage completes successfully with matching request/instance ID.
-- **PROVEN BROKEN**: earliest error in scheduler, conductor, Placement allocation, image fetch, port binding, volume mapping or compute host at incident time.
-- **INFERENCE / HYPOTHESIS**: NoValidHost may indicate capacity, aggregate/AZ rules, flavor traits, PCI/NUMA, cell mapping or service state; it is not the root cause without matching evidence.
-- **UNKNOWN**: missing trace, absent logs, RBAC gap or unsupported/disabled optional service.
+**Step 5 — Only follow the first proven failing hop.** If the matched failure is Neutron port binding, inspect that port and OVN binding; if Cinder mapping, inspect the specific volume transaction; if scheduling, inspect Placement allocations/inventories and Nova cell host mapping. Do **not** perform all tests without an evidenced need.
 
-## Fault-domain-specific next action
+## 7. Validation and completion
 
-- Scheduler rejection: collect scheduler error and Placement provider inventory/traits/allocations; inspect requested flavor, AZ and aggregates.
-- Compute unregistered/down: compare service list, hypervisors, cell host mappings (use discovered Nova conductor as described in [Nova reference](https://github.com/sheejithkv/RHOSO/blob/main/docs/05-nova-cells-compute-placement.md)) and EDPM nova-compute service logs.
-- Port binding/DHCP: inspect the instance port and Neutron API errors; then OVN NB/SB binding and affected chassis, not the entire network stack by default.
-- Image or volume error: trace matching Glance/Cinder request and backend logs before involving Ceph.
+After separate approved remediation, reproduce the original server-create request with equivalent region, flavor, network, storage constraints and project policy. Verify **ACTIVE**, actual compute placement, console/guest boot, intended ports and attached volumes. Record original and new request IDs; API acceptance alone is insufficient.
 
-## Stop / remediation boundary
+## 8. Rollback / restoration
 
-This SOP is intentionally read-only. **Do not retry server creation, delete a port/VM, change quotas, force service state, or restart Nova based solely on BUILD/ERROR.** Document controller ownership, first proven failure, minimal reviewed change, risk, rollback and the test that reproduces the **original VM provisioning transaction**. Escalate when evidence crosses into a different fault domain.
+Read-only SOP; none. Any proposed change must separately define authoritative owner, impact, explicit rollback steps and guest/storage consistency checks.
 
-## 7. Validation
+## 9. Evidence and escalation
 
-Locate matching request ID, timestamp and first failing subsystem; after an independently approved fix, reproduce the original VM create transaction. Record observed values, timestamp, request/VM/host reference, and explicit PASS / FAIL / UNAVAILABLE; a healthy Kubernetes object is not an end-to-end test.
+**PROVEN BROKEN:** earliest correlated scheduler, port-binding, image, volume or compute error. **PROVEN HEALTHY:** successful prior stages matched to this request. **INFERENCE:** resulting inability to boot. **HYPOTHESIS:** NoValidHost caused by quota/traits/host capacity (unproven without inventories). **UNKNOWN:** missing logs, project visibility, or request ID.
 
-## 8. Rollback / recovery
-
-No change in this SOP. A separate approved remediation requires rollback with workload-specific safeguards.
-
-## 9. Troubleshooting and escalation
-
-Classify evidence into **PROVEN HEALTHY**, **PROVEN BROKEN**, **INFERENCE**, **HYPOTHESIS**, and **UNKNOWN**. Record the first proven boundary; do not infer trigger/root cause from labels without logs.
+Use [L1–L3 ownership and escalation](../START-HERE.md). Record incident-time and current-time evidence separately. A user-facing failure is not automatically proof of the ticket's assumed fault domain.
 
 ## 10. References
 
-- [RHOSO 18.x admin command reference](https://github.com/sheejithkv/RHOSO/blob/main/docs/00-usage-and-conventions.md)
-- [Official Red Hat sources](https://github.com/sheejithkv/RHOSO/blob/main/docs/official-sources.md)
-- [Worked example for this area](EXAMPLE.md) (**SIMULATED**, not observed)
+- [RHOSO official documentation](https://docs.redhat.com/en/documentation/red_hat_openstack_services_on_openshift/18.0)
+- [RHOSO repository command reference](https://github.com/sheejithkv/RHOSO/tree/main/docs)
+- [Worked incident example](EXAMPLE.md) — **SIMULATED**, not live evidence
+- [Compatibility register](../COMPATIBILITY.md)
 
 ## 11. Revision history
 
 | Version | Date (UTC) | Change | Site verification |
-| :--- | :--- | :--- | :--- |
-| 0.1.0 | 2026-10-20 | Starter draft | Not performed |
-| 0.2.0 | 2026-10-21 | Visual SOP metadata, step/expected matrices and example links | Not performed |
+| --- | --- | --- | --- |
+| 0.1.0 | 2026-10-20 | Initial draft | Not performed |
+| 0.2.0 | 2026-10-21 | Structure and examples | Not performed |
+| 0.3.0 | 2026-10-22 | Consolidated single procedure, role gates and verification criteria | Not performed |

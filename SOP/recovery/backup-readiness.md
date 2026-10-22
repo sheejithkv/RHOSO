@@ -1,142 +1,97 @@
-# SOP-REC-001 · RHOSO Control Plane Backup Readiness
+# SOP-REC-001 — RHOSO control-plane backup readiness
 
-> [!WARNING]
-> **DRAFT — NOT APPROVED FOR LIVE PRODUCTION.** Release-dependent commands require target-environment verification. **No production execution has been performed.**
+!!! warning "DRAFT — read-only audit"
+    This SOP does **not** execute backups, restores or deletions. Backup object existence is not proof of recoverability; no site-specific DR validation or approver has been recorded.
 
-| Document control | Value | Document control | Value |
-| :--- | :--- | :--- | :--- |
-| **SOP ID** | SOP-REC-001 | **Version** | 0.2.0 |
-| **Status** | DRAFT | **Type** | recovery |
-| **Release** | RHOSO 18.x (micro-release unverified) | **Owner / Approver** | Not assigned |
-| **Last live validation** | Not performed | **Execution** | [OCP] / [OS] as marked |
-| **Change reference** | Required for any write | **Authoritative owner** | Discover Operator / GitOps / Helm |
+| Control | Value | Control | Value |
+| --- | --- | --- | --- |
+| SOP ID | SOP-REC-001 | Version | 0.3.0 |
+| Status | **DRAFT** | Level | L1 inventory; L2 storage; L3 DR |
+| RHOSO release | 18.x — exact version **UNKNOWN** | Owner / approver | **Unassigned** |
+| Last live validation | **Not performed** | Change | None (read-only) |
 
-**Quick navigation:** [Purpose](#1-purpose) · [Scope](#2-scope) · [Prerequisites](#3-prerequisites) · [Risks](#4-impact-and-risks) · [Flow](#5-decision-path) · [Steps](#6-detailed-procedure) · [Validation](#7-validation) · [Rollback](#8-rollback--recovery) · [Troubleshooting](#9-troubleshooting-and-escalation) · [References](#10-references) · [History](#11-revision-history)
+## 1. Purpose and acceptance
 
-## 1. Purpose
+Evaluate whether configured backups are recent and whether there is **independent, documented restore evidence** meeting the organization's RPO and RTO. A completed Velero Backup or a Bound PVC alone does not establish recovery viability.
 
-Inventory deployed OADP/Velero protection and determine whether current backup evidence supports RPO/RTO objectives.
+## 2. Scope and execution context
 
-**Expected operational outcome:** Recent supported backup, independent storage artifact/integrity checks and documented isolated restore test; backup CR existence alone is insufficient.
+[OCP] authenticated admin workstation. OADP/Velero and VolumeSnapshot APIs are **optional**; inspect only if installed. External Ceph/ODF, MariaDB/Galera data and EDPM host configurations may require separately managed protection.
 
-## 2. Scope
+## 3. Preconditions
 
-RHOSO 18.x only with deployed, supported components. Reference names and namespaces are **not** assumed. See the site-specific support matrix before performing changes.
+- Identify RHOSO and OpenShift exact versions, OADP/operator version and supported backup topology. The original RHOSO 18.0 OADP procedure has maintenance-release prerequisites; verify current documentation before relying on it.
+- Approved access to backup CRs without disclosing credentials.
+- Defined recovery objectives, off-cluster storage owner, last authorized isolated restore test and change authority for any eventual DR exercise.
 
-## 3. Prerequisites
+## 4. Impact and stop conditions
 
-Authenticated [OCP] OpenShift workstation and discovered [OS] OpenStackClient when needed; least-privilege credentials; correct cloud/project/region/host; incident or approved change ticket; known authoritative owner.
-
-## 4. Impact and risks
-
-> [!CAUTION]
-> Read-only assessment; avoid backup content, credentials and any restore/delete action. Unsupported versions must not be treated as ready. **STOP** if the original transaction, command context, controller ownership, prerequisites or rollback capability is unknown.
+!!! danger "STOP"
+    No restore, backup deletion, namespace replacement or storage manipulation from this page. If compatibility, artifact integrity, backup scope, or isolated restore evidence is unknown, report **UNVERIFIED** and escalate to the DR owner.
 
 ## 5. Decision path
 
 ```mermaid
 flowchart TD
-  A["Identify scope, transaction and timestamp"] --> B["Run read-only discovery"]
-  B --> C{"Proven failure or objective verified?"}
-  C -- No --> D["Record UNKNOWN and escalate"]
-  C -- Yes --> E{"Mutation required?"}
-  E -- Yes --> F["Validate owner, approval, risk and rollback"]
-  F --> G["Controlled change only"]
-  E -- No --> H["Record observations"]
-  G --> I["Reproduce original transaction"]
-  H --> I
-  I --> J["Document result and handover"]
+ A["Discover platform release + backup APIs"] --> B{"Supported method installed?"}
+ B -- "No / UNKNOWN" --> C["UNAVAILABLE: contact DR owner"]
+ B -- "Yes" --> D["Inspect backup and storage locations"]
+ D --> E{"Recent successful artifact?"}
+ E -- "No" --> C
+ E -- "Yes" --> F{"Independent isolated restore evidence?"}
+ F -- "No" --> G["Recovery UNVERIFIED"]
+ F -- "Yes" --> H["Compare RPO/RTO and scope"]
 ```
 
-## 6. Detailed procedure
+## 6. Procedure
 
-| Step | Description | Exact command and context | Expected result | Interpretation / stop |
-| :--- | :--- | :--- | :--- | :--- |
-| 1 | Check version and context | `[OCP] oc get clusterversion` | Observed OpenShift release | Verify RHOSO/OpenShift/OADP compatibility |
-| 2 | Discover backup APIs | `[OCP] oc api-resources \| grep -Ei 'velero\|dataprotectionapplication\|volumesnapshot'` | APIs present or unavailable | Never assume OADP installed |
-| 3 | Inspect backup inventory when installed | `[OCP] oc get backups.velero.io -A` | Backup phase/timestamps | Does not establish recoverability |
-| 4 | Review storage locations when installed | `[OCP] oc get backupstoragelocations.velero.io -A` | Configured target and phase | Independently verify access and data integrity |
+**Step 1 — Inspect platform and backup API discovery [OCP, read-only].**
 
-> [!NOTE]
-> Run commands **individually in their stated execution context**. Substitute real discovered values. The matrix above is a reference; do not execute a table directly.
-
-### Full procedure and environment discovery
-
-| Field | Value |
-| --- | --- |
-| Status / version | DRAFT / 0.1.0 |
-| Scope | RHOSO control-plane state, OADP/Velero when supported and deployed |
-| Execution | [OCP] authenticated admin workstation |
-| Owner / approver | To be assigned |
-| Last site validation | Not performed |
-
-## Purpose and release gate
-
-**Transaction:** administrator inspects whether configured, recent backup artifacts are ready to support a **documented recovery objective**. This is a read-only readiness review, not a backup/restore execution or proof of recoverability.
-
-The original RHOSO 18.x reference identifies version prerequisites for the OADP method (RHOSO 18.0.21+, OpenShift 4.20+, OADP 1.5+). Recheck current Red Hat support, exact RHOSO maintenance release, OpenShift/OADP versions, storage-backup method and cluster topology before approving this SOP. External Ceph, ODF, database and EDPM configuration protection may need separate procedures.
-
-## Read-only inventory (execute only for installed APIs)
-
-~~~bash
-# [OCP][RO] Confirm cluster identity, versions and RHOSO CR namespace.
+```bash
 oc whoami
 oc get clusterversion
 oc get openstackcontrolplanes -A
-oc get openstackdataplanenodesets -A
-oc get openstackdataplanedeployments -A
+oc api-resources | grep -Ei 'velero|dataprotectionapplication|volumesnapshot'
+```
 
-# [OCP][RO] Detect relevant APIs; absence is UNAVAILABLE, not HEALTHY.
-oc api-resources | grep -Ei 'dataprotectionapplication|backupstoragelocation|velero|volumesnapshot'
+**Expected:** actual compatible APIs or documented absence. `grep` can exit 1 if no optional resources: classify **UNAVAILABLE**, not an infrastructure failure.
 
-# [OCP][RO] If DataProtectionApplication CRD is installed:
+**Step 2 — If applicable CRDs exist, inspect backup resources [OCP, read-only].**
+
+```bash
 oc get dataprotectionapplications.oadp.openshift.io -A
-
-# [OCP][RO] If Velero API CRDs are installed:
 oc get backupstoragelocations.velero.io -A
 oc get backups.velero.io -A
 oc get schedules.velero.io -A
-oc get restores.velero.io -A
-
-# [OCP][RO] If VolumeSnapshot CRD is installed:
 oc get volumesnapshots.snapshot.storage.k8s.io -A
-~~~
+```
 
-## Acceptance evidence
+**Expected:** inventory and reported phase. Execute only commands whose API exists; failures from missing optional CRDs do not imply backup failure.
 
-- RPO, RTO, backup schedule, most recent successful run, age, artifact integrity and retention are documented and approved.
-- BackupStorageLocation accessibility, object-store retention, encryption, credential lifecycle and off-cluster availability have been separately verified by authorized operators.
-- Database consistency and persistent volume protection are evaluated for the **actual** deployed storage drivers, databases and release.
-- A restore exercise was performed in an isolated, supported test environment, or **recovery remains UNVERIFIED**. Listing a completed Backup CR is not a restore test.
-- Redacted references and gaps are recorded; secrets or raw backup archives are never committed to git.
-
-## Stop and escalation
-
-Do not generate or run restore/delete commands as part of this SOP. If release support, storage integrity, restore isolation, backup freshness or authoritative configuration is unknown, mark **UNAVAILABLE/WARN** and escalate to the DR owner. Follow release-specific Red Hat restore documentation and a separately approved, exercised DR plan.
-
-References: [RHOSO administration documentation](https://github.com/sheejithkv/RHOSO/blob/main/docs/official-sources.md) and [recovery command reference](https://github.com/sheejithkv/RHOSO/blob/main/docs/18-backup-disaster-recovery.md).
+**Step 3 — Review recovery acceptance evidence.** Obtain the actual latest artifact, retention, off-cluster access, encryption controls, database/PVC consistency guarantees and last supported **isolated restore test** from the authorized storage/DR owner. Do not retrieve backup data or secrets into the runbook.
 
 ## 7. Validation
 
-Recent supported backup, independent storage artifact/integrity checks and documented isolated restore test; backup CR existence alone is insufficient. Record observed values, timestamp, request/VM/host reference, and explicit PASS / FAIL / UNAVAILABLE; a healthy Kubernetes object is not an end-to-end test.
+Record backup age versus RPO, test restore time versus RTO, resources restored (including DB/PVC where applicable), date, storage backend and secure ticket reference. If no isolated restore passed, the result is **UNVERIFIED**; do not mark PASS.
 
-## 8. Rollback / recovery
+## 8. Rollback
 
-No mutation; rollback not applicable. Restore commands intentionally omitted.
+Read-only; none. Actual DR restoration requires an independently approved, supported, exercised procedure including fencing and data consistency safeguards.
 
-## 9. Troubleshooting and escalation
+## 9. Evidence and escalation
 
-Classify evidence into **PROVEN HEALTHY**, **PROVEN BROKEN**, **INFERENCE**, **HYPOTHESIS**, and **UNKNOWN**. Record the first proven boundary; do not infer trigger/root cause from labels without logs.
+**PROVEN HEALTHY:** backup/storage/restore checks supported by redacted test evidence. **PROVEN BROKEN:** a backed-up dependency or supported restore test failed. **INFERENCE:** recovery impact. **HYPOTHESIS:** specific storage/DB cause without logs. **UNKNOWN:** absent test or inaccessible storage evidence. Escalate to DR/DBA/storage owners.
 
 ## 10. References
 
-- [RHOSO 18.x admin command reference](https://github.com/sheejithkv/RHOSO/blob/main/docs/00-usage-and-conventions.md)
-- [Official Red Hat sources](https://github.com/sheejithkv/RHOSO/blob/main/docs/official-sources.md)
-- [Worked example for this area](EXAMPLE.md) (**SIMULATED**, not observed)
+- [RHOSO backup/restore](https://docs.redhat.com/en/documentation/red_hat_openstack_services_on_openshift/18.0/html/backing_up_and_restoring_a_rhoso_control_plane)
+- [Worked example](EXAMPLE.md) — simulated
+- [Release gate](../RELEASE-GATE.md) · [Escalation](../START-HERE.md)
 
 ## 11. Revision history
 
-| Version | Date (UTC) | Change | Site verification |
-| :--- | :--- | :--- | :--- |
-| 0.1.0 | 2026-10-20 | Starter draft | Not performed |
-| 0.2.0 | 2026-10-21 | Visual SOP metadata, step/expected matrices and example links | Not performed |
+| Version | Date (UTC) | Description | Live validation |
+| --- | --- | --- | --- |
+| 0.1.0 | 2026-10-20 | Initial draft | None |
+| 0.2.0 | 2026-10-21 | Visual format | None |
+| 0.3.0 | 2026-10-22 | Consistent metadata, version gate, restore acceptance | None |

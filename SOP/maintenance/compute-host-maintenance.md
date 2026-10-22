@@ -1,161 +1,116 @@
-# SOP-MNT-001 · Scheduled EDPM Compute Host Maintenance
+# SOP-MNT-001 — EDPM compute host maintenance
 
-> [!WARNING]
-> **DRAFT — NOT APPROVED FOR LIVE PRODUCTION.** Release-dependent commands require target-environment verification. **No production execution has been performed.**
+!!! warning "DRAFT — not authorized for live maintenance"
+    No production validation or named approver exists. Changes require an approved maintenance window, workloads reviewed by their owners, and release-specific Red Hat procedure. This page is **not** an instruction to reboot.
 
-| Document control | Value | Document control | Value |
-| :--- | :--- | :--- | :--- |
-| **SOP ID** | SOP-MNT-001 | **Version** | 0.2.0 |
-| **Status** | DRAFT | **Type** | maintenance |
-| **Release** | RHOSO 18.x (micro-release unverified) | **Owner / Approver** | Not assigned |
-| **Last live validation** | Not performed | **Execution** | [OCP] / [OS] as marked |
-| **Change reference** | Required for any write | **Authoritative owner** | Discover Operator / GitOps / Helm |
+| Control | Value | Control | Value |
+| --- | --- | --- | --- |
+| SOP ID | SOP-MNT-001 | Version | 0.3.0 |
+| Status | **DRAFT** | Level | L1 inventory; **L2/L3 approved changes only** |
+| RHOSO release | 18.x; exact micro-release **UNKNOWN** | Owner / approver | **Unassigned** |
+| Last live validation | **Not performed** | Impact | Potential VM disruption |
+| Authoritative source | EDPM NodeSet / deployment, Operator, GitOps as discovered | Change ticket | Required |
 
-**Quick navigation:** [Purpose](#1-purpose) · [Scope](#2-scope) · [Prerequisites](#3-prerequisites) · [Risks](#4-impact-and-risks) · [Flow](#5-decision-path) · [Steps](#6-detailed-procedure) · [Validation](#7-validation) · [Rollback](#8-rollback--recovery) · [Troubleshooting](#9-troubleshooting-and-escalation) · [References](#10-references) · [History](#11-revision-history)
+## 1. Purpose and acceptance
 
-## 1. Purpose
+Execute approved compute maintenance without unplanned scheduling, VM migrations or loss of tenant availability. **Acceptance:** original workload transactions succeed after maintenance, host returns to required state, and every affected VM has an approved disposition.
 
-Perform an approved host maintenance sequence with verified guest eligibility and safe scheduling controls.
+## 2. Scope and execution context
 
-**Expected operational outcome:** Original workload transactions pass, guests are accounted for, and host state is verified after approved maintenance.
+[OCP] inventory Operator-owned `OpenStackDataPlaneNodeSet` and deployments; [OS] use authenticated OpenStackClient for Nova queries; [EDPM] any host operations require **separate release-supported procedure**. This SOP does not authorize reboot, rebuild, fencing or Ceph work.
 
-## 2. Scope
+## 3. Preconditions
 
-RHOSO 18.x only with deployed, supported components. Reference names and namespaces are **not** assumed. See the site-specific support matrix before performing changes.
+- Named maintenance owner, ticket, approved workload list, window, communication and recovery plan.
+- Check Instance HA interaction (if deployed), Nova cell membership, AZ/aggregates and Placement traits.
+- Verify each guest's CPU compatibility, PCI/SR-IOV, NUMA/hugepages, storage and migration compatibility before considering live migration.
+- Verify target host headroom for the *actual flavor and constraints*, not aggregate vCPU/RAM only.
+- Determine CR/GitOps/Helm authoritative configuration ownership before any changes.
 
-## 3. Prerequisites
+## 4. Impact and stop conditions
 
-Authenticated [OCP] OpenShift workstation and discovered [OS] OpenStackClient when needed; least-privilege credentials; correct cloud/project/region/host; incident or approved change ticket; known authoritative owner.
-
-## 4. Impact and risks
-
-> [!CAUTION]
-> State-changing scheduling operations; incorrect migrations/reboots can interrupt VMs or create split-brain. No automatic reboot, evacuation or pod delete. **STOP** if the original transaction, command context, controller ownership, prerequisites or rollback capability is unknown.
+!!! danger "STOP"
+    Never disable or migrate a host until workload owner approval, supported migration method, target eligibility and rollback are documented. A scheduler-disable action **does not** move existing VMs. Do not perform automatic evacuation or reboot.
 
 ## 5. Decision path
 
 ```mermaid
 flowchart TD
-  A["Identify scope, transaction and timestamp"] --> B["Run read-only discovery"]
-  B --> C{"Proven failure or objective verified?"}
-  C -- No --> D["Record UNKNOWN and escalate"]
-  C -- Yes --> E{"Mutation required?"}
-  E -- Yes --> F["Validate owner, approval, risk and rollback"]
-  F --> G["Controlled change only"]
-  E -- No --> H["Record observations"]
-  G --> I["Reproduce original transaction"]
-  H --> I
-  I --> J["Document result and handover"]
+ A["Approved change + source host identity"] --> B["Inventory guests / constraints"]
+ B --> C{"Every guest has approved disposition?"}
+ C -- "No" --> STOP["STOP / escalate"]
+ C -- "Yes" --> D["Confirm placement + storage/migration compatibility"]
+ D --> E{"Approved destination and rollback?"}
+ E -- "No" --> STOP
+ E -- "Yes" --> F["Disable new scheduling under change"]
+ F --> G["Only approved migrations / host work"]
+ G --> H["Reproduce workload transactions"]
+ H --> I["Enable scheduling only when host fit"]
 ```
 
-## 6. Detailed procedure
+## 6. Procedure
 
-| Step | Description | Exact command and context | Expected result | Interpretation / stop |
-| :--- | :--- | :--- | :--- | :--- |
-| 1 | Inventory affected guests | `[OS] openstack server list --all-projects --host "$COMPUTE_HOST"` | Complete instance list | Stop if workload ownership/availability unknown |
-| 2 | Check capacity and policies | `[OS] openstack hypervisor stats show` | Fleet-level capacity summary | Not sufficient to establish target placement; inspect traits/NUMA/AZ |
-| 3 | Disable new scheduling | `[OS][CHANGE] openstack compute service set --disable --disable-reason "$CHANGE_ID" "$COMPUTE_HOST" nova-compute` | Disabled scheduler flag | Only after approved change and ownership check |
-| 4 | Verify disable | `[OS] openstack compute service list --host "$COMPUTE_HOST"` | Disabled as intended | Existing VMs remain on host |
-| 5 | Restore scheduling after validation | `[OS][CHANGE] openstack compute service set --enable "$COMPUTE_HOST" nova-compute` | Enabled and up after accepted maintenance | Only after workload and host checks |
+**Step 1 — Discover management ownership [OCP, read-only].**
 
-> [!NOTE]
-> Run commands **individually in their stated execution context**. Substitute real discovered values. The matrix above is a reference; do not execute a table directly.
-
-### Full procedure and environment discovery
-
-| Field | Value |
-| --- | --- |
-| Status / version | DRAFT / 0.1.0 |
-| Scope | RHOSO 18.x EDPM compute nodes; Nova service and running instances |
-| Execution | [OS] authenticated OpenStackClient; [OCP] operator/CR inventory; [EDPM] approved host |
-| Owner / approver | To be assigned |
-| Last site validation | Not performed |
-| Official reference | https://docs.redhat.com/en/documentation/red_hat_openstack_services_on_openshift/18.0/html-single/maintaining_the_red_hat_openstack_services_on_openshift_deployment/index |
-
-## Change gate and preconditions
-
-Use only with an **approved** change ID, defined workload downtime tolerance, workload-owner authorization and a recovery window. Check supported release-specific host-maintenance steps, RHOSO Operator/EDPM NodeSet ownership and GitOps reconciliation before editing any desired state. Coordinate with Instance HA, if installed, to avoid false evacuation.
-
-Confirm destination host eligibility, capacity, same Nova cell and policy/AZ/aggregate constraints, CPU model, NUMA/hugepages, PCI/SR-IOV, storage/shared-storage or block-migration support, and in-flight migrations. Do **not** assume all VMs support live migration. Do not use the word *reserved* in disable reasons when Instance HA is in use.
-
-~~~bash
-# [OCP][RO] Discover controller-owned data plane; no changes.
+```bash
 oc get openstackdataplanenodesets -A
 oc get openstackdataplanedeployments -A
+```
 
-# [OS][RO] Supply real values only after reviewing the maintenance ticket.
-# COMPUTE_HOST and CHANGE_ID must be set in this OpenStackClient shell.
+**Expected:** exact NodeSet/deployment and authoritative controller path, not guessed names.
+
+**Step 2 — Verify compute and affected workload inventory [OS, read-only].** Supply approved `COMPUTE_HOST`.
+
+```bash
 openstack compute service list --host "$COMPUTE_HOST"
 openstack server list --all-projects --host "$COMPUTE_HOST"
 openstack hypervisor stats show
-openstack hypervisor show "$COMPUTE_HOST"
-openstack server migration list --server "$VM_UUID"
-openstack server volume list "$VM_UUID"
-~~~
+```
 
-**STOP** if host identification, source-of-truth, workload list, destination or rollback is uncertain. Host-level spare capacity is not sufficient by itself to prove Placement placement compatibility.
+**Expected:** complete VM inventory and compute service state. The aggregate stats **do not** establish destination eligibility. Confirm Placement inventory/traits/NUMA/PCI and each VM's attached volumes.
 
-## Approved minimum change — operator run individually
+**Step 3 — L2/L3 ONLY: disable *new* scheduling [OS, CHANGE].** Do not execute without a documented and approved change ID.
 
-~~~bash
-# [OS][CHANGE] Disable new scheduling; existing guests are NOT moved.
+```bash
 openstack compute service set --disable --disable-reason "$CHANGE_ID" "$COMPUTE_HOST" nova-compute
-
-# [OS][RO] Verify host scheduling state and unaffected VM inventory.
 openstack compute service list --host "$COMPUTE_HOST"
-openstack server list --all-projects --host "$COMPUTE_HOST"
+```
 
-# [OS][CHANGE] Optional; only for a VM confirmed live-migration compatible.
-# Requires an approved target, VM_UUID and an authorized migration window.
-openstack server migrate --live-migration --host "$TARGET_HOST" --wait "$VM_UUID"
+**Expected:** service disabled for new scheduling. Existing guests remain on the host. This does **not** validate readiness to reboot.
 
-# [OS][RO] Verify actual VM placement and migration outcome.
-openstack server show "$VM_UUID" -f yaml
-openstack server migration list --server "$VM_UUID"
-openstack server list --all-projects --host "$COMPUTE_HOST"
-~~~
+**Step 4 — Migration execution requires a separate per-guest approved plan.** Do not use a generic bulk migration or automatic host reboot. Validate migration target, availability zone, same-cell requirements, NUMA/PCI, storage, Instance HA, downtime and rollback for **each VM**. Use [RHOSO maintenance documentation](https://docs.redhat.com/en/documentation/red_hat_openstack_services_on_openshift/18.0/html-single/maintaining_the_red_hat_openstack_services_on_openshift_deployment/index).
 
-**Do not reboot or remove the host as part of this generic SOP.** EDPM reboots, node replacement, fencing, Instance HA and co-located Ceph operations need separately reviewed RHOSO release-specific procedures. Continue only when all affected workloads have approved dispositions.
+**Step 5 — L2/L3 ONLY: enable scheduling after source host and user transactions pass [OS, CHANGE].**
 
-## Restore scheduling and validate
-
-~~~bash
-# [OS][CHANGE] Only after maintenance finished and source host tested.
+```bash
 openstack compute service set --enable "$COMPUTE_HOST" nova-compute
-
-# [OS][RO] Confirm service UP/enabled, compute inventories and placement.
 openstack compute service list --host "$COMPUTE_HOST"
-openstack hypervisor show "$COMPUTE_HOST"
-openstack server list --all-projects --host "$COMPUTE_HOST"
-~~~
+```
 
-**Validation:** reproduce a permitted instance placement/migration transaction and verify guest reachability, console, attached storage and networking. An enabled/up service status is insufficient alone.
-
-**Rollback:** if a migration fails, stop subsequent migrations; preserve the disabled scheduler state until reviewed. If host health is confirmed but only scheduling disable must be undone, re-enable using the command above under change control. Guest relocation rollback is VM-, storage- and topology-dependent and must be separately specified in the approved change.
-
-Record observed before/after states, VM IDs as secure ticket references, migration errors, owner sign-off and outstanding limitations.
+**Expected:** service `up/enabled`; further validation of guest placement and APIs still required.
 
 ## 7. Validation
 
-Original workload transactions pass, guests are accounted for, and host state is verified after approved maintenance. Record observed values, timestamp, request/VM/host reference, and explicit PASS / FAIL / UNAVAILABLE; a healthy Kubernetes object is not an end-to-end test.
+Verify each migrated/retained guest's state, placement, network reachability, storage and expected application path. Reproduce the approved original VM/workload transaction. Record before/after evidence and unresolved constraints.
 
-## 8. Rollback / recovery
+## 8. Rollback
 
-If only disable was performed and host is proven fit, re-enable under change control; failed migration rollback is guest/storage/topology-dependent.
+If only scheduler-disable occurred and host is demonstrably healthy, approved rollback is to re-enable scheduling using Step 5. Guest relocation, reboot, disk or infrastructure rollback is **topology-dependent** and must be written in the change record **before** maintenance. On migration error, stop subsequent migrations and preserve state for investigation.
 
-## 9. Troubleshooting and escalation
+## 9. Evidence and escalation
 
-Classify evidence into **PROVEN HEALTHY**, **PROVEN BROKEN**, **INFERENCE**, **HYPOTHESIS**, and **UNKNOWN**. Record the first proven boundary; do not infer trigger/root cause from labels without logs.
+**PROVEN HEALTHY:** exact host/guest checks. **PROVEN BROKEN:** failed migration or application transaction. **INFERENCE:** impacted capacity. **HYPOTHESIS:** storage/CPU mismatch until proven. **UNKNOWN:** unsupported relocation eligibility. L1 does not execute Step 3 or Step 5.
 
 ## 10. References
 
-- [RHOSO 18.x admin command reference](https://github.com/sheejithkv/RHOSO/blob/main/docs/00-usage-and-conventions.md)
-- [Official Red Hat sources](https://github.com/sheejithkv/RHOSO/blob/main/docs/official-sources.md)
-- [Worked example for this area](EXAMPLE.md) (**SIMULATED**, not observed)
+- [RHOSO maintaining deployment](https://docs.redhat.com/en/documentation/red_hat_openstack_services_on_openshift/18.0/html-single/maintaining_the_red_hat_openstack_services_on_openshift_deployment/index)
+- [Worked example](EXAMPLE.md) — simulated
+- [Release gate](../RELEASE-GATE.md) · [Escalation](../START-HERE.md)
 
 ## 11. Revision history
 
-| Version | Date (UTC) | Change | Site verification |
-| :--- | :--- | :--- | :--- |
-| 0.1.0 | 2026-10-20 | Starter draft | Not performed |
-| 0.2.0 | 2026-10-21 | Visual SOP metadata, step/expected matrices and example links | Not performed |
+| Version | Date (UTC) | Description | Live validation |
+| --- | --- | --- | --- |
+| 0.1.0 | 2026-10-20 | Initial draft | None |
+| 0.2.0 | 2026-10-21 | Visual format | None |
+| 0.3.0 | 2026-10-22 | L1/L2/L3 separation, change gate, migration stop conditions | None |
