@@ -3,6 +3,10 @@
 > [!IMPORTANT]
 > These are **engineer-facing, versioned SOPs**, not a script to execute from top to bottom. The current procedures and worked examples are **DRAFT** and have **not** been approved or tested against a production RHOSO environment. Validate commands against your release, service layout and organizational change process.
 
+## Maintaining and updating SOPs
+
+**[Start here: exact SOP update and release guide](MAINTAINING-SOPS.md)** — edit an existing SOP, add a new one, update examples, synchronize the two styled HTML copies, validate, review and merge. **Markdown and the visual HTML are not automatically synchronized.**
+
 ## Visual SOP layout — open the styled version
 
 ![SOP visual design overview](visual/sop-preview.svg)
@@ -25,6 +29,7 @@
 
 | Resource | Use |
 | :--- | :--- |
+| [Maintenance and update instructions](MAINTAINING-SOPS.md) | Exact authoring, visual-sync, testing and PR procedure |
 | [SOP template](TEMPLATE.md) | Document-control panel; numbered sections; step/command/expected/interpretation layout |
 | [Contribution and approval rules](CONTRIBUTING.md) | Author, review, evidence, release, deprecation |
 | [Improvement backlog](IMPROVEMENTS.md) | Prioritized proposed controls and future SOPs |

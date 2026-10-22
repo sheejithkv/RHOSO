@@ -6,6 +6,10 @@ This is an **actual rendered HTML/CSS SOP interface**, not a Markdown-only draft
 
 > **Important:** The SVG above is a **schematic thumbnail** of the design. The real interactive viewer is [index.html](index.html). GitHub displays HTML **source code** in its repository viewer rather than rendering it as a web app.
 
+## Updating the styled content
+
+Follow [the SOP maintainer procedure](../MAINTAINING-SOPS.md), especially **section 3**. Updating `SOP/*.md` does not change this viewer automatically. Edit the corresponding entry in `const docs = {` in `SOP/visual/index.html`; copy it unchanged to `docs/sop/index.html`; compare the visual content against the Markdown authority and test locally. GitHub Actions checks byte equality and syntax, **not semantic consistency**.
+
 ## Open the styled SOP
 
 1. Open [index.html](index.html) in GitHub.

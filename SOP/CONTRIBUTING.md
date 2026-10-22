@@ -1,5 +1,7 @@
 # Authoring and approving RHOSO SOPs
 
+For the **exact engineer update workflow**, including the required manual synchronization of Markdown, the visual HTML and its `docs/sop/` mirror, follow [MAINTAINING-SOPS.md](MAINTAINING-SOPS.md). This file contains review policy; it does not replace the operational update steps.
+
 1. Start with [TEMPLATE.md](TEMPLATE.md). Create a uniquely numbered document under `operations/`, `incidents/`, `maintenance/` or `recovery/`.
 2. Make the **visible procedure** work like a production document: title/metadata, purpose, scope, prerequisites, safety gate, decision flow, step matrix, one code block per step, expected result, validation, rollback, references and dated revisions.
 3. Use `[OCP]`, `[OS]`, `[EDPM]`, `[POD]`, or `[CEPH]`. **Discover real pods/containers first** and document authentication rather than credentials. Never assume optional services or TripleO deployment models.

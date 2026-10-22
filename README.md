@@ -10,7 +10,7 @@ RabbitMQ, HA, forensic troubleshooting, planned maintenance, and recovery.
 
 ## Start here
 
-**[Visual SOP design preview and viewer instructions](SOP/visual/README.md)** · [SOP catalogue](SOP/README.md)
+**[How to update an SOP](SOP/MAINTAINING-SOPS.md)** · [Visual SOP design preview and viewer instructions](SOP/visual/README.md) · [SOP catalogue](SOP/README.md)
 
 
 - [Standard Operating Procedures (SOP) and improvement proposals](SOP/README.md)
