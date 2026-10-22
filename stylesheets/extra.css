@@ -1,0 +1,8 @@
+:root { --md-primary-fg-color: #173b5c; --md-accent-fg-color: #2470aa; }
+.md-header { background: #173b5c; }
+.md-typeset h1 { font-weight: 750; letter-spacing: -.02em; color: var(--md-default-fg-color); }
+.md-typeset h2 { border-bottom: 2px solid var(--md-primary-fg-color); padding-bottom: .28rem; }
+.md-typeset table:not([class]) { font-size: .75rem; }
+.md-typeset table:not([class]) th { background: #e6f0fa; color: #173b5c; }
+[data-md-color-scheme="slate"] .md-typeset table:not([class]) th { background: #203b52; color: #eef6ff; }
+.md-typeset .admonition { border-radius: .4rem; }

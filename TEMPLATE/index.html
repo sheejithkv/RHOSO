@@ -1,0 +1,1661 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Version-controlled RHOSO operations, incident, maintenance and recovery SOPs">
+      
+      
+      
+        <link rel="canonical" href="https://sheejithkv.github.io/RHOSO/TEMPLATE/">
+      
+      
+        <link rel="prev" href="../recovery/EXAMPLE/">
+      
+      
+        <link rel="next" href="../CONTRIBUTING/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Template - RHOSO 18.x | Operating Procedures</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="blue">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#sop-area-nnn-exact-operational-objective" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="RHOSO 18.x | Operating Procedures" class="md-header__button md-logo" aria-label="RHOSO 18.x | Operating Procedures" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            RHOSO 18.x | Operating Procedures
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Template
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="blue"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="blue"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/sheejithkv/RHOSO" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    sheejithkv/RHOSO
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="RHOSO 18.x | Operating Procedures" class="md-nav__button md-logo" aria-label="RHOSO 18.x | Operating Procedures" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    RHOSO 18.x | Operating Procedures
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/sheejithkv/RHOSO" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    sheejithkv/RHOSO
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../START-HERE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Engineer start here
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../RELEASE-GATE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Production release gate
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../COMPATIBILITY/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Platform compatibility
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operations
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Operations
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../operations/daily-health-check/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Daily health check
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../operations/EXAMPLE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Worked example
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Incidents
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Incidents
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../incidents/vm-build-failure/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    VM BUILD / ERROR
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../incidents/EXAMPLE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Worked example
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Maintenance
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Maintenance
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../maintenance/compute-host-maintenance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compute maintenance
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../maintenance/EXAMPLE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Worked example
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Recovery
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Recovery
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../recovery/backup-readiness/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Backup readiness
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../recovery/EXAMPLE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Worked example
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SOP authoring
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_9">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    SOP authoring
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Template
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Template
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-purpose-and-success-criteria" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Purpose and success criteria
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-scope-and-exclusions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Scope and exclusions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-preconditions-and-access" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Preconditions and access
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-impact-and-stop-conditions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Impact and stop conditions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-decision-path" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Decision path
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-step-by-step-procedure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Step-by-step procedure
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Validation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-rollback-and-recovery" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Rollback and recovery
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-troubleshooting-and-escalation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Troubleshooting and escalation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10-references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. References
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#11-revision-history" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11. Revision history
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../CONTRIBUTING/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing and review
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../IMPROVEMENTS/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Improvement backlog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../CHANGELOG/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Change history
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-purpose-and-success-criteria" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Purpose and success criteria
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-scope-and-exclusions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Scope and exclusions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-preconditions-and-access" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Preconditions and access
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-impact-and-stop-conditions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Impact and stop conditions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-decision-path" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Decision path
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-step-by-step-procedure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Step-by-step procedure
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Validation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-rollback-and-recovery" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Rollback and recovery
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-troubleshooting-and-escalation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Troubleshooting and escalation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10-references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. References
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#11-revision-history" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11. Revision history
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+                
+
+
+
+  
+
+
+  <nav class="md-path" aria-label="Navigation" >
+    <ol class="md-path__list">
+      
+        
+  
+  
+    <li class="md-path__item">
+      <a href=".." class="md-path__link">
+        
+  <span class="md-ellipsis">
+    Home
+  </span>
+
+      </a>
+    </li>
+  
+
+      
+      
+        
+  
+  
+    
+    
+      <li class="md-path__item">
+        <a href="./" class="md-path__link">
+          
+  <span class="md-ellipsis">
+    SOP authoring
+  </span>
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ol>
+  </nav>
+
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/sheejithkv/RHOSO/edit/main/SOP/TEMPLATE.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="sop-area-nnn-exact-operational-objective">SOP-[AREA]-[NNN] · [Exact operational objective]<a class="headerlink" href="#sop-area-nnn-exact-operational-objective" title="Permanent link">&para;</a></h1>
+<blockquote>
+<p>[!IMPORTANT]
+<strong>DRAFT — NOT APPROVED FOR PRODUCTION.</strong> Substitute discovered resource names, confirm release-specific support, and obtain change authorization for any mutating command. Never treat this Markdown file as an executable shell script.</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Document control</th>
+<th style="text-align: left;">Value</th>
+<th style="text-align: left;">Document control</th>
+<th style="text-align: left;">Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong>SOP ID</strong></td>
+<td style="text-align: left;">SOP-[AREA]-[NNN]</td>
+<td style="text-align: left;"><strong>Version</strong></td>
+<td style="text-align: left;">0.1.0</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Status</strong></td>
+<td style="text-align: left;">DRAFT</td>
+<td style="text-align: left;"><strong>Type</strong></td>
+<td style="text-align: left;">Operations / Incident / Maintenance / Recovery</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Applies to</strong></td>
+<td style="text-align: left;">RHOSO 18.x; actual minor/micro release <strong>not yet verified</strong></td>
+<td style="text-align: left;"><strong>Risk</strong></td>
+<td style="text-align: left;">Read-only / Approved change / Destructive</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Owner</strong></td>
+<td style="text-align: left;">Unassigned</td>
+<td style="text-align: left;"><strong>Approver</strong></td>
+<td style="text-align: left;">Unassigned</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Last validated</strong></td>
+<td style="text-align: left;">Not validated on target cluster</td>
+<td style="text-align: left;"><strong>Next review</strong></td>
+<td style="text-align: left;">Not scheduled</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Change / ticket</strong></td>
+<td style="text-align: left;">Not assigned</td>
+<td style="text-align: left;"><strong>Authoritative source</strong></td>
+<td style="text-align: left;">Identify Operator CR / GitOps / Helm / other reconciler</td>
+</tr>
+</tbody>
+</table>
+<p><strong>On this page:</strong> <a href="#1-purpose-and-success-criteria">Purpose</a> · <a href="#2-scope-and-exclusions">Scope</a> · <a href="#3-preconditions-and-access">Preconditions</a> · <a href="#4-impact-and-stop-conditions">Risks</a> · <a href="#5-decision-path">Flow</a> · <a href="#6-step-by-step-procedure">Procedure</a> · <a href="#7-validation">Validation</a> · <a href="#8-rollback-and-recovery">Rollback</a> · <a href="#9-troubleshooting-and-escalation">Troubleshooting</a> · <a href="#10-references">References</a> · <a href="#11-revision-history">Revision</a></p>
+<h2 id="1-purpose-and-success-criteria">1. Purpose and success criteria<a class="headerlink" href="#1-purpose-and-success-criteria" title="Permanent link">&para;</a></h2>
+<p><strong>Trigger / transaction:</strong> [What exact user/system action prompted this SOP? Identify original request ID/time.]</p>
+<p><strong>Desired outcome:</strong> [Measurable user-visible success; not only API status or pod readiness.]</p>
+<h2 id="2-scope-and-exclusions">2. Scope and exclusions<a class="headerlink" href="#2-scope-and-exclusions" title="Permanent link">&para;</a></h2>
+<p><strong>Included:</strong> [service, cell, host, storage/network backend, impacted workloads].</p>
+<p><strong>Not included:</strong> [optional services, untested versions, irreversible repair, etc.].</p>
+<p><strong>Context:</strong> <code>[OCP]</code> OpenShift workstation; <code>[OS]</code> authenticated OpenStackClient; <code>[EDPM]</code> RHEL data plane; <code>[POD]</code> discovered service container; <code>[CEPH]</code> authorized Ceph environment.</p>
+<h2 id="3-preconditions-and-access">3. Preconditions and access<a class="headerlink" href="#3-preconditions-and-access" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Confirm <code>oc whoami</code>, target cloud, namespace, privileges and relevant Operator/EDPM CRs.</li>
+<li>Discover pod/container and exact service scope before executing a pod command.</li>
+<li>Read credentials from <strong>approved authentication context</strong>; never paste or commit secrets.</li>
+<li>Locate authoritative GitOps source / Operator CR, review approved change and topology constraints.</li>
+<li>Verify RHOSO/OpenShift/EDPM versions and official Red Hat release-specific documentation.</li>
+</ul>
+<h2 id="4-impact-and-stop-conditions">4. Impact and stop conditions<a class="headerlink" href="#4-impact-and-stop-conditions" title="Permanent link">&para;</a></h2>
+<blockquote>
+<p>[!CAUTION]
+<strong>STOP</strong> if the impacted transaction is not identified, controller ownership is unknown, required backup/rollback has not been verified, or evidence conflicts. No default restarts, deletion, forced state changes or blind migrations.</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Impact</th>
+<th style="text-align: left;">Risk</th>
+<th style="text-align: left;">Control</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;">[User/VM/service impact]</td>
+<td style="text-align: left;">[Failure mode]</td>
+<td style="text-align: left;">[Permission, change gate, rollback trigger]</td>
+</tr>
+</tbody>
+</table>
+<h2 id="5-decision-path">5. Decision path<a class="headerlink" href="#5-decision-path" title="Permanent link">&para;</a></h2>
+<pre class="mermaid"><code>flowchart TD
+    A["Capture exact transaction and timestamps"] --&gt; B{"First proven failure known?"}
+    B -- "No" --&gt; C["Collect one read-only fault-domain evidence set"]
+    C --&gt; B
+    B -- "Yes" --&gt; D{"Change necessary?"}
+    D -- "No" --&gt; E["Record observed outcome and validate transaction"]
+    D -- "Yes" --&gt; F{"Approved, owned and rollback ready?"}
+    F -- "No" --&gt; G["STOP and escalate"]
+    F -- "Yes" --&gt; H["Apply minimum reviewed change"]
+    H --&gt; I["Reproduce original transaction"]
+    I --&gt; J{"Acceptance criteria pass?"}
+    J -- "No" --&gt; G
+    J -- "Yes" --&gt; K["Record evidence and handover"]</code></pre>
+<h2 id="6-step-by-step-procedure">6. Step-by-step procedure<a class="headerlink" href="#6-step-by-step-procedure" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Step</th>
+<th style="text-align: left;">Action / execution context</th>
+<th style="text-align: left;">Expected evidence</th>
+<th style="text-align: left;">Interpretation / next step</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;">1</td>
+<td style="text-align: left;"><strong>Read-only</strong> · <code>[OCP]</code> Discover scope</td>
+<td style="text-align: left;">Actual names and status; no secrets</td>
+<td style="text-align: left;">Stop if multiple candidates not identified</td>
+</tr>
+<tr>
+<td style="text-align: left;">2</td>
+<td style="text-align: left;"><strong>Read-only</strong> · <code>[OS]</code> Inspect transaction</td>
+<td style="text-align: left;">Exact state / request ID</td>
+<td style="text-align: left;">Identify first proven failing boundary</td>
+</tr>
+<tr>
+<td style="text-align: left;">3</td>
+<td style="text-align: left;"><strong>Change-controlled</strong> · only where approved</td>
+<td style="text-align: left;">Explicit postcondition</td>
+<td style="text-align: left;">Validate original transaction; rollback if pre-agreed condition</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Step 1 — Discover target (read-only; [OCP])</strong></p>
+<div class="highlight"><pre><span></span><code>oc<span class="w"> </span>whoami
+oc<span class="w"> </span>get<span class="w"> </span>openstackcontrolplanes<span class="w"> </span>-A
+</code></pre></div>
+<p><strong>Expected:</strong> authenticated identity and discovered namespace; never infer that an existing CR means an API transaction works.</p>
+<p><strong>Step 2 — Reproduce and investigate (read-only; [OS])</strong></p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Execute inside discovered, authenticated OpenStackClient.</span>
+openstack<span class="w"> </span>token<span class="w"> </span>issue
+</code></pre></div>
+<p><strong>Expected:</strong> token issue confirms Keystone authentication only. Validate the original failed operation separately.</p>
+<p><strong>Step 3 — Approved change (if any; [context])</strong></p>
+<p><em>No generic remediation. Add site-verified exact commands only after authoritative owner and change approval are recorded.</em></p>
+<h2 id="7-validation">7. Validation<a class="headerlink" href="#7-validation" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Check</th>
+<th style="text-align: left;">Acceptance condition</th>
+<th style="text-align: left;">Evidence / time</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;">Original transaction</td>
+<td style="text-align: left;">[Same request type succeeds end to end]</td>
+<td style="text-align: left;">[Redacted incident reference]</td>
+</tr>
+<tr>
+<td style="text-align: left;">Related service impact</td>
+<td style="text-align: left;">[No unexpected regression]</td>
+<td style="text-align: left;">[Monitoring or test reference]</td>
+</tr>
+<tr>
+<td style="text-align: left;">Current versus incident-time state</td>
+<td style="text-align: left;">[Differences recorded]</td>
+<td style="text-align: left;">[Time-series reference]</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>[!NOTE]
+A successful <code>openstack token issue</code>, pod <code>Running</code>, or HTTP 200 response <strong>does not</strong> by itself establish end-to-end application/service health.</p>
+</blockquote>
+<h2 id="8-rollback-and-recovery">8. Rollback and recovery<a class="headerlink" href="#8-rollback-and-recovery" title="Permanent link">&para;</a></h2>
+<p><strong>Rollback owner:</strong> [person/role]. <strong>Trigger:</strong> [specific failed acceptance/stop condition]. <strong>Prerequisites:</strong> [data/backup/host safety]. <strong>Rollback action:</strong> [exact, verified approved steps or "not applicable for read-only SOP"]. <strong>Rollback validation:</strong> rerun the original transaction.</p>
+<h2 id="9-troubleshooting-and-escalation">9. Troubleshooting and escalation<a class="headerlink" href="#9-troubleshooting-and-escalation" title="Permanent link">&para;</a></h2>
+<p><strong>PROVEN HEALTHY:</strong> [facts/timestamps]. <strong>PROVEN BROKEN:</strong> [first failing stage + request ID]. <strong>INFERENCE:</strong> [causal interpretation]. <strong>HYPOTHESIS:</strong> [unverified possibilities]. <strong>UNKNOWN:</strong> [missing evidence].</p>
+<p>Escalation: [team, incident bridge, ticket]. Provide a <em>redacted</em>, timestamped short log excerpt supporting the first failing boundary, not bulk confidential logs.</p>
+<h2 id="10-references">10. References<a class="headerlink" href="#10-references" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="https://docs.redhat.com/en/documentation/red_hat_openstack_services_on_openshift/18.0">RHOSO 18.0 official documentation</a></li>
+<li><a href="https://github.com/sheejithkv/RHOSO/blob/main/docs/00-usage-and-conventions.md">Repository execution contexts</a></li>
+<li><a href="../operations/EXAMPLE/">Worked example</a> — replace with the example link for your SOP's category.</li>
+</ul>
+<h2 id="11-revision-history">11. Revision history<a class="headerlink" href="#11-revision-history" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Version</th>
+<th style="text-align: left;">Date (UTC)</th>
+<th style="text-align: left;">Author / reviewer</th>
+<th style="text-align: left;">What changed</th>
+<th style="text-align: left;">Target validation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;">0.1.0</td>
+<td style="text-align: left;">YYYY-MM-DD</td>
+<td style="text-align: left;">Unassigned</td>
+<td style="text-align: left;">Initial draft</td>
+<td style="text-align: left;">Not performed</td>
+</tr>
+</tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.sections", "navigation.path", "navigation.top", "toc.follow", "search.suggest", "search.highlight", "content.code.copy", "content.action.edit"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>
