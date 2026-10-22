@@ -1,0 +1,69 @@
+site_name: RHOSO 18.x | Operating Procedures
+site_description: Version-controlled RHOSO operations, incident, maintenance and recovery SOPs
+site_url: https://sheejithkv.github.io/RHOSO/
+repo_name: sheejithkv/RHOSO
+repo_url: https://github.com/sheejithkv/RHOSO
+edit_uri: edit/main/SOP/
+docs_dir: SOP
+site_dir: site
+theme:
+  name: material
+  language: en
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: blue
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: blue
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.sections
+    - navigation.path
+    - navigation.top
+    - toc.follow
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.action.edit
+plugins:
+  - search
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+extra_css:
+  - stylesheets/extra.css
+nav:
+  - Home: README.md
+  - Operations:
+      - Daily health check: operations/daily-health-check.md
+      - Worked example: operations/EXAMPLE.md
+  - Incidents:
+      - VM BUILD / ERROR: incidents/vm-build-failure.md
+      - Worked example: incidents/EXAMPLE.md
+  - Maintenance:
+      - Compute maintenance: maintenance/compute-host-maintenance.md
+      - Worked example: maintenance/EXAMPLE.md
+  - Recovery:
+      - Backup readiness: recovery/backup-readiness.md
+      - Worked example: recovery/EXAMPLE.md
+  - SOP authoring:
+      - Template: TEMPLATE.md
+      - Contributing and review: CONTRIBUTING.md
+      - Improvement backlog: IMPROVEMENTS.md
+      - Change history: CHANGELOG.md

@@ -1,10 +1,9 @@
 # SOP revision history
 
-| Date (UTC) | Scope | Version | Status | Details / validation |
-| :--- | :--- | :--- | :--- | :--- |
-| 2026-10-20 | SOP framework and four starter documents | 0.1.0 | DRAFT | Initial directory; untested on target cluster |
-| 2026-10-21 | All four SOPs, template, navigation, example docs | 0.2.0 | DRAFT | Standardized visual step/expected/evidence layout; four simulated worked examples; GitHub formatting review; **no live RHOSO validation** |
+| Date (UTC) | Scope | Status | Notes |
+| :--- | :--- | :--- | :--- |
+| 2026-10-20 | SOP structure and four starter procedures | DRAFT | Initial SOP library; no live cluster validation |
+| 2026-10-21 | Visual design and four simulated walkthroughs | DRAFT | Added procedure sections and worked examples |
+| 2026-10-22 | Single-source MkDocs documentation | DRAFT | Removed separately edited HTML viewer, mirror, preview and sync instructions; automated site generation from Markdown |
 
-| 2026-10-22 | SOP authoring and viewer maintenance instructions | 0.3.1 | Documentation only | New MAINTAINING-SOPS.md; links from catalogue, contribution, visual viewer and root README; no site validation |
-
-Authoritative document approvals remain unassigned. Record real change-ticket, reviewer identity, specific RHOSO micro release and acceptance evidence before approving any SOP. Git history retains the exact diff.
+For every new or revised SOP, update its own version, maintainer, target RHOSO micro-release, review status and validation evidence. Git history records complete diffs. A documentation build is not equivalent to operational approval.

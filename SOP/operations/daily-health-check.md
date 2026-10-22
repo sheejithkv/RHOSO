@@ -126,8 +126,8 @@ Classify evidence into **PROVEN HEALTHY**, **PROVEN BROKEN**, **INFERENCE**, **H
 
 ## 10. References
 
-- [RHOSO 18.x admin command reference](../../docs/00-usage-and-conventions.md)
-- [Official Red Hat sources](../../docs/official-sources.md)
+- [RHOSO 18.x admin command reference](https://github.com/sheejithkv/RHOSO/blob/main/docs/00-usage-and-conventions.md)
+- [Official Red Hat sources](https://github.com/sheejithkv/RHOSO/blob/main/docs/official-sources.md)
 - [Worked example for this area](EXAMPLE.md) (**SIMULATED**, not observed)
 
 ## 11. Revision history
