@@ -1,11 +1,11 @@
 # SOP revision history
 
 | Date (UTC) | Scope | Status | Notes |
-| :--- | :--- | :--- | :--- |
+| --- | --- | --- | --- |
 | 2026-10-20 | SOP structure and four starter procedures | DRAFT | Initial SOP library; no live cluster validation |
 | 2026-10-21 | Visual design and four simulated walkthroughs | DRAFT | Added procedure sections and worked examples |
-| 2026-10-22 | Single-source MkDocs documentation | DRAFT | Removed separately edited HTML viewer, mirror, preview and sync instructions; automated site generation from Markdown |
+| 2026-10-22 | Single-source MkDocs documentation | DRAFT | Removed separately edited HTML viewer and manual synchronization |
+| 2026-10-22 | Safety review, mock contract tests, L1/L2/L3 and release gate | DRAFT | CI does not replace target-cluster tests; no production approval |
+| 2026-11-03 | Corporate controlled-document SOP layout | DRAFT | Four SOPs transformed to nine sections, formal developer/review/approval tables, revision records, roles, terms, A4 print CSS and validation checks |
 
-For every new or revised SOP, update its own version, maintainer, target RHOSO micro-release, review status and validation evidence. Git history records complete diffs. A documentation build is not equivalent to operational approval.
-
-| 2026-10-22 | Release hardening: audited health-check conditions, mock contract tests, unified four SOPs, L1-L3 and release gate | DRAFT | CI does not replace target RHOSO test; no production approval |
+For each SOP revision, identify its document developer, owner, exact RHOSO micro-release, approver, revision date, effective date and operational validation evidence. No production sign-off has been asserted.

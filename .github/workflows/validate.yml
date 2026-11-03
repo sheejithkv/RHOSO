@@ -34,6 +34,8 @@ jobs:
           test -s docs/official-sources.md
           test -s source/RHOSO_18x_Complete_Production_Runbook.txt
           git diff --check
+      - name: Validate corporate SOP structure
+        run: python -m unittest discover -s tests -p 'test_sop_structure.py' -v
       - name: Build SOP website from Markdown
         run: mkdocs build --strict --clean
 

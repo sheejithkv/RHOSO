@@ -10,7 +10,7 @@ RabbitMQ, HA, forensic troubleshooting, planned maintenance, and recovery.
 
 ## Start here
 
-**[L1/L2/L3 START HERE](SOP/START-HERE.md)** · [Release gate: NO-GO until approved](SOP/RELEASE-GATE.md) · [SOP catalogue](SOP/README.md) · [SOP template](SOP/TEMPLATE.md) · [MkDocs Material documentation](https://squidfunk.github.io/mkdocs-material/)
+**[Corporate SOP library](SOP/README.md)** · [L1/L2/L3 START HERE](SOP/START-HERE.md) · [Release gate: NO-GO until approved](SOP/RELEASE-GATE.md) · [SOP catalogue](SOP/README.md) · [SOP template](SOP/TEMPLATE.md) · [MkDocs Material documentation](https://squidfunk.github.io/mkdocs-material/)
 
 
 - [Standard Operating Procedures (SOP) and improvement proposals](SOP/README.md)
@@ -22,7 +22,7 @@ RabbitMQ, HA, forensic troubleshooting, planned maintenance, and recovery.
 
 ## Standard operating procedures
 
-The [SOP directory](SOP/README.md) provides a [standard procedure template](SOP/TEMPLATE.md), [contribution/review process](SOP/CONTRIBUTING.md), four **DRAFT** operational procedures and a [prioritized improvement backlog](SOP/IMPROVEMENTS.md). SOP Markdown is the single source of truth; a MkDocs Material website is built automatically from it on pull requests and published to `gh-pages` after merge. GitHub Pages must be enabled once under repository Settings → Pages, selecting `gh-pages` / root. Procedures remain unapproved for production until tested and signed off for the deployed RHOSO version and topology. SOP changes use an accompanying [PR checklist](.github/PULL_REQUEST_TEMPLATE/sop-change.md).
+The [SOP directory](SOP/README.md) provides a **corporate-controlled nine-section SOP layout**, [standard procedure template](SOP/TEMPLATE.md), [contribution/review process](SOP/CONTRIBUTING.md), four **DRAFT** operational procedures and a [prioritized improvement backlog](SOP/IMPROVEMENTS.md). SOP Markdown is the single source of truth; a MkDocs Material website is built automatically from it on pull requests and published to `gh-pages` after merge. GitHub Pages must be enabled once under repository Settings → Pages, selecting `gh-pages` / root. Procedures remain unapproved for production until tested and signed off for the deployed RHOSO version and topology. SOP changes use an accompanying [PR checklist](.github/PULL_REQUEST_TEMPLATE/sop-change.md).
 
 ## Administration reference — 21 sections
 
