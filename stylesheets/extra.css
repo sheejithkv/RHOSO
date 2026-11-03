@@ -1,0 +1,89 @@
+/* RHOSO controlled-document layout. Single Markdown source; A4 print. */
+:root {
+  --md-primary-fg-color: #173b5c;
+  --md-accent-fg-color: #2470aa;
+}
+.md-header { background: #173b5c; }
+.md-typeset h1 { font-weight: 750; letter-spacing: -.02em; }
+.md-typeset h2 { border-bottom: 2px solid var(--md-primary-fg-color); padding-bottom: .25rem; }
+.md-typeset .admonition { border-radius: .35rem; }
+
+/* Only the four SOP documents use this wrapper; site indexes and references remain standard Material. */
+.md-typeset .sop-page { font-family: "Arial", "Liberation Sans", sans-serif; color: var(--md-default-fg-color); }
+.md-typeset .sop-page .sop-banner {
+  display: grid;
+  grid-template-columns: 24% 1fr;
+  gap: 1rem;
+  align-items: center;
+  border-bottom: 2px solid #18252c;
+  padding: 1.15rem .6rem .85rem;
+  margin-bottom: .55rem;
+}
+.md-typeset .sop-page .sop-brand { display: flex; align-items: center; gap: .55rem; border-right: 1px solid #8b9196; min-height: 2.8rem; }
+.md-typeset .sop-page .sop-mark { font-size: 1.3rem; font-weight: 900; letter-spacing: -.06em; color: #163f62; }
+.md-typeset .sop-page .sop-brand small { display: block; font-size: .55rem; line-height: 1.32; color: var(--md-default-fg-color--light); }
+.md-typeset .sop-page .sop-banner-name { display: flex; flex-direction: column; gap: .18rem; color: var(--md-default-fg-color); }
+.md-typeset .sop-page .sop-banner-name strong { font-size: .82rem; line-height: 1.4; }
+.md-typeset .sop-page .sop-banner-name span { font-size: .65rem; font-weight: 700; }
+.md-typeset .sop-page > h1 { font-size: 1.22rem; color: #163f62; margin: 1rem 0 .7rem; }
+.md-typeset .sop-page > h2 {
+  font-size: .9rem;
+  font-weight: 750;
+  color: #fff;
+  background: #22292d;
+  border: none;
+  padding: .55rem .7rem;
+  margin: 1.7rem 0 .55rem;
+  letter-spacing: .012em;
+}
+.md-typeset .sop-page h3 { font-size: .82rem; font-weight: 750; color: var(--md-default-fg-color); }
+.md-typeset .sop-page table:not([class]) { display: table; width: 100%; border-collapse: collapse; font-size: .64rem; }
+.md-typeset .sop-page table:not([class]) th { background: #e1e4e7; color: #141b23; font-weight: 700; }
+.md-typeset .sop-page table:not([class]) th,
+.md-typeset .sop-page table:not([class]) td { padding: .43rem .55rem; border: 1px solid #adb4ba; vertical-align: top; overflow-wrap: anywhere; }
+.md-typeset .sop-page .sop-public-notice {
+  border: 1px solid #c0c5ca;
+  background: #f5f6f7;
+  color: #263238;
+  border-radius: .18rem;
+  margin: 1rem 0;
+  padding: .6rem .75rem;
+  font-size: .63rem;
+  line-height: 1.5;
+}
+.md-typeset .sop-page .sop-paper-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: .75rem;
+  border-top: 1px solid #858e97;
+  padding-top: .45rem;
+  margin-top: 2rem;
+  font-size: .6rem;
+}
+.md-typeset .sop-page pre { font-size: .68rem; }
+[data-md-color-scheme="slate"] .md-typeset .sop-page .sop-mark,
+[data-md-color-scheme="slate"] .md-typeset .sop-page > h1 { color: #8fc4e7; }
+[data-md-color-scheme="slate"] .md-typeset .sop-page table:not([class]) th { background: #30383d; color: #f1f3f5; }
+[data-md-color-scheme="slate"] .md-typeset .sop-page .sop-public-notice { background: #303638; color: #e9edf0; }
+
+@media (max-width: 700px) {
+  .md-typeset .sop-page .sop-banner { grid-template-columns: 1fr; gap: .55rem; }
+  .md-typeset .sop-page .sop-brand { border-right: none; }
+  .md-typeset .sop-page table:not([class]) { display: block; overflow-x: auto; }
+  .md-typeset .sop-page .sop-paper-footer { flex-direction: column; }
+}
+@media print {
+  @page { size: A4; margin: 15mm 14mm 17mm; }
+  html, body { background: #fff !important; color: #111 !important; }
+  .md-header, .md-sidebar, .md-footer, .md-tabs, .md-search, .md-content__button, .md-top, .md-dialog, .md-source { display: none !important; }
+  .md-main, .md-main__inner, .md-content, .md-content__inner { display: block !important; margin: 0 !important; padding: 0 !important; max-width: none !important; }
+  .md-typeset .sop-page { color: #111 !important; font-size: 9.5pt; }
+  .md-typeset .sop-page > h2 { background: #232a2d !important; color: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .md-typeset .sop-page .sop-banner-name, .md-typeset .sop-page .sop-brand { color: #111 !important; }
+  .md-typeset .sop-page table:not([class]) { display: table !important; width: 100% !important; font-size: 8pt; break-inside: auto; }
+  .md-typeset .sop-page table:not([class]) th { background: #e1e4e7 !important; color: #111 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .md-typeset .sop-page table:not([class]) tr { break-inside: avoid; }
+  .md-typeset .sop-page h2, .md-typeset .sop-page h3 { break-after: avoid; }
+  .md-typeset .sop-page pre, .md-typeset .sop-page .admonition { break-inside: avoid; }
+  .md-typeset .sop-page .sop-public-notice { background: #f5f6f7 !important; color: #111 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
