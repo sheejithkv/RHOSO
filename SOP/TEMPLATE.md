@@ -1,127 +1,170 @@
-# SOP-[AREA]-[NNN] · [Exact operational objective]
+<div class="sop-page" markdown="1">
 
-> [!IMPORTANT]
-> **DRAFT — NOT APPROVED FOR PRODUCTION.** Substitute discovered resource names, confirm release-specific support, and obtain change authorization for any mutating command. Never treat this Markdown file as an executable shell script.
+<div class="sop-banner" role="region" aria-label="Controlled SOP header">
+  <div class="sop-brand"><span class="sop-mark">RHOSO</span><small>Red Hat OpenStack<br>Services on OpenShift</small></div>
+  <div class="sop-banner-name"><strong>STANDARD OPERATING PROCEDURE (SOP)</strong><span>[Procedure title]</span></div>
+</div>
 
-| Document control | Value | Document control | Value |
-| :--- | :--- | :--- | :--- |
-| **SOP ID** | SOP-[AREA]-[NNN] | **Version** | 0.1.0 |
-| **Status** | DRAFT | **Type** | Operations / Incident / Maintenance / Recovery |
-| **Applies to** | RHOSO 18.x; actual minor/micro release **not yet verified** | **Risk** | Read-only / Approved change / Destructive |
-| **Owner** | Unassigned | **Approver** | Unassigned |
-| **Last validated** | Not validated on target cluster | **Next review** | Not scheduled |
-| **Change / ticket** | Not assigned | **Authoritative source** | Identify Operator CR / GitOps / Helm / other reconciler |
+# [Procedure title]
 
-**On this page:** [Purpose](#1-purpose-and-success-criteria) · [Scope](#2-scope-and-exclusions) · [Preconditions](#3-preconditions-and-access) · [Risks](#4-impact-and-stop-conditions) · [Flow](#5-decision-path) · [Procedure](#6-step-by-step-procedure) · [Validation](#7-validation) · [Rollback](#8-rollback-and-recovery) · [Troubleshooting](#9-troubleshooting-and-escalation) · [References](#10-references) · [Revision](#11-revision-history)
+| Document reference | RHOSO-ITD-SOP-[AREA]-[NNN] | Revision | REV. 00.0 |
+| --- | --- | --- | --- |
+| Effective date | Pending approval | Status | **DRAFT — UNAPPROVED** |
+| Target platform | RHOSO 18.x — exact micro-release unverified | Classification | Public engineering draft |
 
-## 1. Purpose and success criteria
+!!! danger "Release restriction"
+    **DRAFT / not authorized for live production changes.** Read-only discovery is for appropriately authorized personnel. Follow the [release gate](RELEASE-GATE.md) before promoting status.
 
-**Trigger / transaction:** [What exact user/system action prompted this SOP? Identify original request ID/time.]
+## DOCUMENT INFORMATION
 
-**Desired outcome:** [Measurable user-visible success; not only API status or pod readiness.]
+| Field | Value | Field | Value |
+| --- | --- | --- | --- |
+| Department | [Actual IT department / unit] | Document custodian | [Role] |
+| Document developer | [Name and designation] | Signature / date | Pending / Pending |
+| Target release | [Exact RHOSO / OCP / EDPM versions] | Change reference | [Not assigned] |
 
-## 2. Scope and exclusions
+## DOCUMENT REVIEW AND APPROVAL
 
-**Included:** [service, cell, host, storage/network backend, impacted workloads].
+| Action | Name | Title / responsibility | Business unit | Signature | Date |
+| --- | --- | --- | --- | --- | --- |
+| Reviewed by | Pending | [RHOSO Technical Reviewer] | [Unit] | Pending | Pending |
+| Reviewed by | Pending | [IT Operations Reviewer] | [Unit] | Pending | Pending |
+| Approved by | Pending | [Authorized Approver] | [Unit] | Pending | Pending |
 
-**Not included:** [optional services, untested versions, irreversible repair, etc.].
+<div class="sop-public-notice"><strong>Publication notice.</strong> This repository is publicly accessible. Do not include organization-confidential language copied from other institutions, internal endpoints, credentials, customer data, tenant information or production evidence. Any controlled confidential version must be published via the organization's approved private document-management process.</div>
 
-**Context:** `[OCP]` OpenShift workstation; `[OS]` authenticated OpenStackClient; `[EDPM]` RHEL data plane; `[POD]` discovered service container; `[CEPH]` authorized Ceph environment.
+## REVISION HISTORY
 
-## 3. Preconditions and access
+| Revision | Date (UTC) | Justification | Sections revised |
+| --- | --- | --- | --- |
+| REV. 00.0 | [Date] | Initial draft | N/A |
 
-- Confirm `oc whoami`, target cloud, namespace, privileges and relevant Operator/EDPM CRs.
-- Discover pod/container and exact service scope before executing a pod command.
-- Read credentials from **approved authentication context**; never paste or commit secrets.
-- Locate authoritative GitOps source / Operator CR, review approved change and topology constraints.
-- Verify RHOSO/OpenShift/EDPM versions and official Red Hat release-specific documentation.
+## TABLE OF CONTENTS
 
-## 4. Impact and stop conditions
+| Section | Content | Section | Content |
+| --- | --- | --- | --- |
+| 1 | [Purpose](#1-purpose) | 6 | [Implementation](#6-implementation) |
+| 2 | [Scope](#2-scope) | 7 | [Review requirements](#7-review-requirements) |
+| 3 | [Applicability](#3-applicability) | 8 | [References](#8-references) |
+| 4 | [Terms & definitions](#4-terms-definitions) | 9 | [Appendices](#9-appendices) |
+| 5 | [Roles & responsibilities](#5-roles-responsibilities) | | |
 
-> [!CAUTION]
-> **STOP** if the impacted transaction is not identified, controller ownership is unknown, required backup/rollback has not been verified, or evidence conflicts. No default restarts, deletion, forced state changes or blind migrations.
+## 1 PURPOSE
 
-| Impact | Risk | Control |
-| :--- | :--- | :--- |
-| [User/VM/service impact] | [Failure mode] | [Permission, change gate, rollback trigger] |
+[Identify exact user-visible transaction or scheduled operational objective and measurable result.]
 
-## 5. Decision path
+## 2 SCOPE
 
-~~~mermaid
+[Specify included services, cells, roles, environments, supported topology and explicit exclusions.]
+
+## 3 APPLICABILITY
+
+[State RHOSO/OCP version, optional service dependencies and L1/L2/L3 authority.]
+
+## 4 TERMS & DEFINITIONS
+
+| No. | Term | Definition |
+| --- | --- | --- |
+| 1 | RHOSO | Red Hat OpenStack Services on OpenShift |
+| 2 | [Term] | [Definition] |
+
+## 5 ROLES & RESPONSIBILITIES
+
+| No. | Responsible party | Role and responsibilities |
+| --- | --- | --- |
+| 1 | L1 Operations | Authorized read-only evidence collection and escalation |
+| 2 | L2 RHOSO Engineer | Fault-domain diagnosis, approved service-specific change execution |
+| 3 | L3 / Owner | Architecture, safety gates, root-cause approval and escalation |
+
+## 6 IMPLEMENTATION
+
+### 6.1 Prerequisites and authorization
+
+- [Identity, target cloud, release compatibility, source-of-truth controller, incident/change ticket.]
+- [Do not assume namespaces/pod/container names. Confirm approved authorization before executing writes.]
+
+### 6.2 Impact, risk and stop conditions
+
+!!! danger "STOP"
+    [First proven failure is not identified; unclear controller ownership; missing permissions; unacceptable impact; rollback unavailable.]
+
+### 6.3 Decision flow
+
+```mermaid
 flowchart TD
-    A["Capture exact transaction and timestamps"] --> B{"First proven failure known?"}
-    B -- "No" --> C["Collect one read-only fault-domain evidence set"]
-    C --> B
-    B -- "Yes" --> D{"Change necessary?"}
-    D -- "No" --> E["Record observed outcome and validate transaction"]
-    D -- "Yes" --> F{"Approved, owned and rollback ready?"}
-    F -- "No" --> G["STOP and escalate"]
-    F -- "Yes" --> H["Apply minimum reviewed change"]
-    H --> I["Reproduce original transaction"]
-    I --> J{"Acceptance criteria pass?"}
-    J -- "No" --> G
-    J -- "Yes" --> K["Record evidence and handover"]
-~~~
+  A["Capture exact transaction / UTC timestamp"] --> B["Read-only evidence"]
+  B --> C{"First proven failure?"}
+  C -- "No" --> D["UNKNOWN — escalate"]
+  C -- "Yes" --> E{"Change required?"}
+  E -- "No" --> F["Document observed results"]
+  E -- "Yes" --> G["Approve owner, impact and rollback"]
+  G --> H["Minimum controlled change"]
+  H --> I["Reproduce original transaction"]
+```
 
-## 6. Step-by-step procedure
+### 6.4 Execution procedure
 
-| Step | Action / execution context | Expected evidence | Interpretation / next step |
-| :--- | :--- | :--- | :--- |
-| 1 | **Read-only** · `[OCP]` Discover scope | Actual names and status; no secrets | Stop if multiple candidates not identified |
-| 2 | **Read-only** · `[OS]` Inspect transaction | Exact state / request ID | Identify first proven failing boundary |
-| 3 | **Change-controlled** · only where approved | Explicit postcondition | Validate original transaction; rollback if pre-agreed condition |
+**Step 1 — Read-only discovery [OCP].**
 
-**Step 1 — Discover target (read-only; [OCP])**
-
-~~~bash
+```bash
 oc whoami
 oc get openstackcontrolplanes -A
-~~~
+```
 
-**Expected:** authenticated identity and discovered namespace; never infer that an existing CR means an API transaction works.
+**Expected:** actual cloud/namespace discovered. **Stop:** ambiguous scope or unauthorized access.
 
-**Step 2 — Reproduce and investigate (read-only; [OS])**
+**Step 2 — Read-only transaction check [OS].** Use authenticated, discovered OpenStackClient context.
 
-~~~bash
-# Execute inside discovered, authenticated OpenStackClient.
-openstack token issue
-~~~
+```bash
+openstack token issue -f value -c expires
+```
 
-**Expected:** token issue confirms Keystone authentication only. Validate the original failed operation separately.
+**Expected:** Keystone token metadata only; this does not prove downstream service health.
 
-**Step 3 — Approved change (if any; [context])**
+**Step 3 — Change control (only if applicable).** [Site-verified exact approved commands, expected results, stop conditions and owner.]
 
-_No generic remediation. Add site-verified exact commands only after authoritative owner and change approval are recorded._
+### 6.5 Acceptance and validation
 
-## 7. Validation
+[Reproduce original failing user/system transaction; log expected vs observed results, UTC timestamp and request ID. Do not consider pod Running or HTTP 200 as end-to-end validation.]
 
-| Check | Acceptance condition | Evidence / time |
-| :--- | :--- | :--- |
-| Original transaction | [Same request type succeeds end to end] | [Redacted incident reference] |
-| Related service impact | [No unexpected regression] | [Monitoring or test reference] |
-| Current versus incident-time state | [Differences recorded] | [Time-series reference] |
+### 6.6 Rollback or restoration
 
-> [!NOTE]
-> A successful `openstack token issue`, pod `Running`, or HTTP 200 response **does not** by itself establish end-to-end application/service health.
+[Minimum safe site-verified rollback, impact and verification, or "not applicable — read-only SOP".]
 
-## 8. Rollback and recovery
+### 6.7 Evidence handling and escalation
 
-**Rollback owner:** [person/role]. **Trigger:** [specific failed acceptance/stop condition]. **Prerequisites:** [data/backup/host safety]. **Rollback action:** [exact, verified approved steps or "not applicable for read-only SOP"]. **Rollback validation:** rerun the original transaction.
+- **PROVEN HEALTHY:** [Verified passed transaction stage]
+- **PROVEN BROKEN:** [First correlated failed transaction stage]
+- **INFERENCE:** [Interpretation supported by evidence]
+- **HYPOTHESIS:** [Candidate cause without proof]
+- **UNKNOWN:** [Missing test/data, unavailable dependency]
+- **Escalation:** [Owning L2/L3 team and ticket reference]
 
-## 9. Troubleshooting and escalation
+## 7 REVIEW REQUIREMENTS
 
-**PROVEN HEALTHY:** [facts/timestamps]. **PROVEN BROKEN:** [first failing stage + request ID]. **INFERENCE:** [causal interpretation]. **HYPOTHESIS:** [unverified possibilities]. **UNKNOWN:** [missing evidence].
+Annual and event-driven reviews are mandatory when RHOSO/OpenShift versions, topology, policies or service ownership change. All revisions require document control and technical review. GitHub merge / CI PASS does not constitute live-runbook approval.
 
-Escalation: [team, incident bridge, ticket]. Provide a *redacted*, timestamped short log excerpt supporting the first failing boundary, not bulk confidential logs.
+## 8 REFERENCES
 
-## 10. References
+- [RHOSO 18.0 documentation](https://docs.redhat.com/en/documentation/red_hat_openstack_services_on_openshift/18.0)
+- [Platform compatibility](COMPATIBILITY.md)
+- [L1/L2/L3 escalation](START-HERE.md)
+- [Production release gate](RELEASE-GATE.md)
 
-- [RHOSO 18.0 official documentation](https://docs.redhat.com/en/documentation/red_hat_openstack_services_on_openshift/18.0)
-- [Repository execution contexts](https://github.com/sheejithkv/RHOSO/blob/main/docs/00-usage-and-conventions.md)
-- [Worked example](operations/EXAMPLE.md) — replace with the example link for your SOP's category.
+## 9 APPENDICES
 
-## 11. Revision history
+### Appendix A — Evidence register
 
-| Version | Date (UTC) | Author / reviewer | What changed | Target validation |
-| :--- | :--- | :--- | :--- | :--- |
-| 0.1.0 | YYYY-MM-DD | Unassigned | Initial draft | Not performed |
+| Evidence | Approved record location |
+| --- | --- |
+| Ticket, UTC time, original user transaction | [Secure ITSM reference] |
+| First proven failure | [Short, redacted source excerpt] |
+| Validation / rollback | [Acceptance test and approved rollback evidence] |
+
+### Appendix B — Worked example
+
+[Link the relevant SOP-specific worked example. Mark fictional observations SIMULATED.]
+
+<div class="sop-paper-footer"><span>RHOSO · Engineering DRAFT · Public reference</span><span>RHOSO-ITD-SOP-[AREA]-[NNN] · REV. 00.0</span></div>
+
+</div>
